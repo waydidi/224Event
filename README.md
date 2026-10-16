@@ -46,7 +46,7 @@ npm run typecheck
    npm run admin -- price:import prices.json   # { "lost-cherry": 280, "negroni": 220, ... }  (THB)
    npm run admin -- menu:list
    ```
-   Optional details per item: `npm run admin -- item:update lost-cherry --image https://… --description "…"`.
+   Optional details per item, shown when a guest taps the drink: `npm run admin -- item:update lost-cherry --image https://… --description "…" --ingredients "Bourbon whiskey, Cherry, Amaretto"`. Classic cocktails come with standard ingredients; the six signature recipes need to be filled in by the bar.
 2. **Tables and QR codes.** Run `npm run admin -- tables:ensure <N>`, then `npm run admin -- qr:sheet ./qr-codes`. This writes a printable A4 PDF (4 cards per page) and one PNG per table. Set `PUBLIC_BASE_URL` before printing, because the QR codes contain that URL.
 3. **Telegram:**
    1. Create a bot with @BotFather and put the token in `TELEGRAM_BOT_TOKEN`.
@@ -55,8 +55,9 @@ npm run typecheck
    4. Run `npm run admin -- telegram:set-webhook` and `npm run admin -- telegram:set-commands`.
 4. **Staff.** Each staff member sends `/whoami` to the bot to get their numeric ID. Then register them:
    `npm run admin -- staff:add <id> server|cashier|lead "Display name"`.
-5. **Venue and receipts.** Set `VENUE_*`, `RECEIPT_*`, `PAYMENT_METHODS`, `SERVICE_CHARGE_BPS` and `VAT_BPS`. Leave the charges at 0 unless they really apply; the system never invents charges.
-6. Run `npm run admin -- check`. It exits non-zero until everything above is in place.
+5. **Receipt logo.** Save the venue logo as `assets/receipt-logo.png` (black on white works best on thermal paper), or point `RECEIPT_LOGO_PATH` at it. Until then the receipt prints a plain "224" mark.
+6. **Venue and receipts.** Set `VENUE_*`, `RECEIPT_*`, `PAYMENT_METHODS`, `SERVICE_CHARGE_BPS` and `VAT_BPS`. Leave the charges at 0 unless they really apply; the system never invents charges.
+7. Run `npm run admin -- check`. It exits non-zero until everything above is in place.
 
 ## Staff procedure (Telegram)
 

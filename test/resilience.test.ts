@@ -67,6 +67,9 @@ describe('reliability & security', () => {
     const menu = await http(env, 'GET', '/api/public/menu');
     assert.equal(menu.data.orderingEnabled, false);
     assert.deepEqual(menu.data.categories.map((c: any) => [c.name, c.items.length]), [['Signature Cocktails', 6], ['Classic Cocktails', 12]]);
+    const negroni = menu.data.categories[1].items.find((i: any) => i.name === 'Negroni');
+    assert.deepEqual(negroni.ingredients, ['Gin', 'Campari', 'Sweet vermouth', 'Orange peel']);
+    assert.deepEqual(menu.data.categories[0].items[0].ingredients, []); // signature recipes come from the bar
     const s = await openTable(env, 1);
     const token = await join(env, 1, s.join_pin);
     // Price all but one.

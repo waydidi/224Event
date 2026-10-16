@@ -112,14 +112,15 @@ const commands: Record<string, { usage: string; run: (args: string[]) => Promise
   },
 
   'item:update': {
-    usage: 'item:update <item code> [--image URL] [--description TEXT] [--prep-note TEXT]',
+    usage: 'item:update <item code> [--image URL] [--description TEXT] [--prep-note TEXT] [--ingredients "Gin, Campari, Sweet vermouth"]',
     run: ([code, ...rest]) => {
-      const fields: Record<string, string | null> = {};
+      const fields: { description?: string | null; image_url?: string | null; prep_note?: string | null; ingredients?: string[] } = {};
       for (let i = 0; i < rest.length; i += 2) {
         const v = rest[i + 1] === '-' ? null : rest[i + 1];
         if (rest[i] === '--image') fields.image_url = v;
         else if (rest[i] === '--description') fields.description = v;
         else if (rest[i] === '--prep-note') fields.prep_note = v;
+        else if (rest[i] === '--ingredients') fields.ingredients = (v ?? '').split(',');
         else throw new Error(`Unknown flag ${rest[i]}`);
       }
       const item = updateItemDetails(ctx, code, fields);

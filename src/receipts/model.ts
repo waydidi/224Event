@@ -17,6 +17,7 @@ export interface ReceiptRow {
 
 export interface ReceiptData {
   widthMm: 80 | 58;
+  logoPath: string;
   venueName: string;
   addressLines: string[];
   phone: string;
@@ -50,6 +51,7 @@ export function loadReceiptData(db: Database, config: Config, receipt: ReceiptRo
   const cashier = db.get<{ display_name: string }>('SELECT display_name FROM staff WHERE id = ?', [payment.confirmed_by])!;
   return {
     widthMm: receipt.width_mm === 58 ? 58 : 80,
+    logoPath: config.receipt.logoPath,
     venueName: config.venue.name,
     addressLines: config.venue.addressLines,
     phone: config.venue.phone,

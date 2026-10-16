@@ -23,6 +23,8 @@ export interface Config {
   receipt: {
     title: string;
     widthMm: 80 | 58;
+    /** PNG/JPEG logo printed at the top; a built-in "224" mark is used when missing. */
+    logoPath: string;
     customerDownload: boolean;
   };
   billing: {
@@ -87,6 +89,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, overrides: Part
     receipt: {
       title: env.RECEIPT_TITLE || 'SALES RECEIPT',
       widthMm: width,
+      logoPath: path.resolve(env.RECEIPT_LOGO_PATH || 'assets/receipt-logo.png'),
       customerDownload: bool(env.RECEIPT_CUSTOMER_DOWNLOAD, true),
     },
     billing: {

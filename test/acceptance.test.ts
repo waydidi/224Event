@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
-import { receiptLines, geometry } from '../src/receipts/pdf.ts';
+import { receiptText, receiptItems } from '../src/receipts/pdf.ts';
 import { loadReceiptData } from '../src/receipts/model.ts';
 import { auth, command, http, join, menuId, openTable, order, setup, tap, USERS, webhook, type TestEnv } from './helpers.ts';
 
@@ -250,16 +250,21 @@ describe('224 Live House acceptance (spec §13)', () => {
     const allItems = db.get<{ c: number }>('SELECT COUNT(*) AS c FROM order_items oi JOIN orders o ON o.id = oi.order_id JOIN table_sessions s ON s.id = o.session_id WHERE s.session_code = ?', ['TABLE1-1'])!.c;
     assert.equal(data.lines.length, allItems);
 
-    const text = receiptLines(data, geometry(80).cols).map((l: any) => (l.kind === 'pair' ? `${l.left} ${l.right}` : l.text ?? '')).join('\n');
+    // Identical items across orders print as one line; amounts still add up exactly.
+    assert.deepEqual(receiptItems(data).map((i) => [i.name, i.quantity, i.lineTotalSatang]), [['Lost Cherry', 2, 56000], ['Negroni', 2, 44000], ['Mojito', 2, 44000]]);
+    assert.equal(receiptItems(data).reduce((s, i) => s + i.lineTotalSatang, 0), bill.subtotal_satang);
+    const text = receiptText(data);
     assert.match(text, /224 LIVE HOUSE/);
     assert.match(text, /SALES RECEIPT/);
     assert.doesNotMatch(text, /TAX INVOICE/i);
-    assert.match(text, /2 x Lost Cherry 560\.00/);
-    assert.match(text, /1 x Negroni 220\.00/);
-    assert.match(text, /2 x Mojito 440\.00/);
-    assert.match(text, /TOTAL THB 1,440\.00/);
-    assert.match(text, /Payment: Cash/);
-    assert.match(text, /Status: PAID/);
+    assert.match(text, /Table: TABLE1-1/);
+    assert.match(text, /Receipt: R-000001/);
+    assert.match(text, /Lost Cherry\n2 × ฿280\.00 560\.00/);
+    assert.match(text, /Negroni\n2 × ฿220\.00 440\.00/);
+    assert.match(text, /Mojito\n2 × ฿220\.00 440\.00/);
+    assert.match(text, /TOTAL ฿1,440\.00/);
+    assert.match(text, /Payment Cash/);
+    assert.match(text, /Status PAID/);
     assert.match(text, /THANK YOU!/);
 
     // PDF was sent to the staff group exactly once, and is downloadable by the guest.
