@@ -55,8 +55,9 @@ npm run typecheck
    4. Run `npm run admin -- telegram:set-webhook` and `npm run admin -- telegram:set-commands`.
 4. **Staff.** Each staff member sends `/whoami` to the bot to get their numeric ID. Then register them:
    `npm run admin -- staff:add <id> server|cashier|lead "Display name"`.
-5. **Venue and receipts.** Set `VENUE_*`, `RECEIPT_*`, `PAYMENT_METHODS`, `SERVICE_CHARGE_BPS` and `VAT_BPS`. Leave the charges at 0 unless they really apply; the system never invents charges.
-6. Run `npm run admin -- check`. It exits non-zero until everything above is in place.
+5. **Receipt logo.** Save the venue logo as `assets/receipt-logo.png` (black on white works best on thermal paper), or point `RECEIPT_LOGO_PATH` at it. Until then the receipt prints a plain "224" mark.
+6. **Venue and receipts.** Set `VENUE_*`, `RECEIPT_*`, `PAYMENT_METHODS`, `SERVICE_CHARGE_BPS` and `VAT_BPS`. Leave the charges at 0 unless they really apply; the system never invents charges.
+7. Run `npm run admin -- check`. It exits non-zero until everything above is in place.
 
 ## Staff procedure (Telegram)
 
