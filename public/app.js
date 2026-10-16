@@ -29,6 +29,7 @@
     joinError: null,
     pinDraft: '',
     pinFocused: false,
+    lastVisit: null,
     errorText: '',
   };
 
@@ -154,6 +155,7 @@
       return render();
     }
     state.token = storage.get(storeKey);
+    try { state.lastVisit = JSON.parse(sessionStorage.getItem(lastKey) || 'null'); } catch { /* ignore */ }
     api('/api/public/menu', { auth: false }).then((menu) => { state.menu = menu; render(); }).catch(() => {});
     await refresh();
     setInterval(() => { if (!document.hidden) refresh(); }, POLL_MS);
@@ -171,11 +173,18 @@
         state.status = await api('/api/public/session/status');
         if (!prev || prev.session.code !== state.status.session.code) loadCart();
         onStatusChange(prev, state.status);
-        if (!state.status.session.isCurrent) {
-          await refreshTable();
-          state.view = 'ended';
-        } else state.view = 'main';
-        return render();
+        if (state.status.session.isCurrent) {
+          state.view = 'main';
+          return render();
+        }
+        // Session is over (paid or closed): forget it and fall back to the table's default screen.
+        rememberLastVisit(state.status);
+        clearCart();
+        storage.del(storeKey);
+        state.token = null;
+        state.status = null;
+        state.tab = 'menu';
+        state.showCart = false;
       } catch (e) {
         if (e.status === 401) {
           storage.del(storeKey);
@@ -187,6 +196,35 @@
     await refreshTable();
     state.view = state.table && state.table.session ? 'join' : 'waiting';
     render();
+  }
+
+  const lastKey = qrToken ? `224:last:${qrToken}` : '';
+  function rememberLastVisit(st) {
+    state.lastVisit = {
+      code: st.session.code,
+      paid: st.session.status === 'PAID_CLOSED',
+      amountSatang: st.payment ? st.payment.amountSatang : st.bill.totalSatang,
+      method: st.payment ? st.payment.method : null,
+      receipt: st.receipt,
+    };
+    try { sessionStorage.setItem(lastKey, JSON.stringify(state.lastVisit)); } catch { /* ignore */ }
+  }
+  function dismissLastVisit() {
+    state.lastVisit = null;
+    try { sessionStorage.removeItem(lastKey); } catch { /* ignore */ }
+    render();
+  }
+
+  function lastVisitNote() {
+    const v = state.lastVisit;
+    if (!v) return null;
+    const text = v.paid
+      ? `Paid ${baht(v.amountSatang)}${v.method ? ` by ${v.method}` : ''} — thank you! Session ${v.code} is closed.`
+      : `Session ${v.code} has ended.`;
+    return h('div', { class: `alert ${v.paid ? 'ok' : ''} last-visit`, role: 'status' },
+      h('span', {}, text,
+        v.paid && v.receipt ? [' ', h('a', { href: v.receipt.url, target: '_blank', rel: 'noopener' }, `Receipt ${v.receipt.number || ''}`.trim())] : null),
+      h('button', { type: 'button', class: 'dismiss', 'aria-label': 'Dismiss', onclick: dismissLastVisit }, '×'));
   }
 
   function onStatusChange(prev, next) {
@@ -210,6 +248,8 @@
       const r = await api('/api/public/session/join', { method: 'POST', body: { qrToken, pin }, auth: false });
       state.token = r.visitToken;
       state.pinDraft = '';
+      state.lastVisit = null;
+      try { sessionStorage.removeItem(lastKey); } catch { /* ignore */ }
       storage.set(storeKey, r.visitToken);
       state.tab = 'menu';
       state.busy = false;
@@ -303,7 +343,7 @@
   }
 
   function viewWaiting() {
-    return [header(), h('div', { class: 'hero' },
+    return [header(), lastVisitNote(), h('div', { class: 'hero' },
       h('div', { class: 'icon', 'aria-hidden': 'true' }, '🎶'),
       h('h2', {}, 'Waiting for staff to open this table'),
       h('p', {}, 'Please let our staff know you have arrived. This page will update automatically.'),
@@ -321,7 +361,7 @@
       state.joinError ? h('div', { class: 'alert error', role: 'alert' }, state.joinError) : null,
       h('div', { class: 'btn-row' }, h('button', { class: 'btn', type: 'submit', disabled: state.busy }, state.busy ? 'Joining…' : 'Start ordering')));
     if (!state.pinFocused) { state.pinFocused = true; setTimeout(() => input.focus(), 50); }
-    return [header(), h('div', { class: 'hero' }, h('div', { class: 'icon', 'aria-hidden': 'true' }, '🍒'), h('h2', {}, `Welcome to ${state.table.table.name || 'your table'}`), h('p', {}, `Session ${state.table.session.code}`)), form];
+    return [header(), lastVisitNote(), h('div', { class: 'hero' }, h('div', { class: 'icon', 'aria-hidden': 'true' }, '🍒'), h('h2', {}, `Welcome to ${state.table.table.name || 'your table'}`), h('p', {}, `Session ${state.table.session.code}`)), form];
   }
 
   function itemCard(item, enabled) {
@@ -442,33 +482,6 @@
       h('p', { class: 'small muted' }, 'Want another drink? Ask staff to reopen your bill.'))];
   }
 
-  function viewPaid(st) {
-    const r = st.receipt;
-    return [h('div', { class: 'hero', role: 'status' },
-      h('div', { class: 'icon', 'aria-hidden': 'true' }, '🎉'),
-      h('h2', {}, 'Paid — Thank you!'),
-      h('div', { class: 'amount' }, baht(st.payment ? st.payment.amountSatang : st.bill.totalSatang)),
-      h('p', {}, st.payment ? `Paid by ${st.payment.method} · ${time(st.payment.confirmedAt)}` : ''),
-      h('p', { class: 'small muted' }, `Session ${st.session.code} is now closed. See you again at 224 Live House!`)),
-    h('div', { class: 'section' },
-      r ? (r.ready
-        ? h('a', { class: 'btn secondary', href: r.url, target: '_blank', rel: 'noopener' }, `Download receipt ${r.number || ''}`)
-        : h('p', { class: 'small muted' }, 'Your receipt is being prepared…')) : null,
-      h('h2', {}, 'Your bill'), billLines(st.bill))];
-  }
-
-  function viewEnded() {
-    const st = state.status;
-    const t = state.table;
-    const canJoin = t && t.session && t.session.code !== st.session.code;
-    const joinBtn = canJoin ? h('div', { class: 'section' }, h('button', { class: 'btn ghost', type: 'button', onclick: () => { storage.del(storeKey); state.token = null; state.status = null; state.view = 'join'; render(); } }, 'I’m a new guest at this table')) : null;
-    if (st.session.status === 'PAID_CLOSED') return [header(), ...viewPaid(st), joinBtn];
-    return [header(), h('div', { class: 'hero' },
-      h('div', { class: 'icon', 'aria-hidden': 'true' }, '🔒'),
-      h('h2', {}, 'This table session has ended'),
-      h('p', {}, `Session ${st.session.code} is closed. Please ask staff if you need help.`)), joinBtn];
-  }
-
   function viewMain() {
     const st = state.status;
     if (st.session.status === 'PAYMENT_REQUESTED' && state.tab !== 'orders') state.tab = 'bill';
@@ -486,7 +499,6 @@
       case 'error': nodes = viewError(); break;
       case 'waiting': nodes = viewWaiting(); break;
       case 'join': nodes = viewJoin(); break;
-      case 'ended': nodes = viewEnded(); break;
       case 'main': nodes = viewMain(); break;
       default: return;
     }
