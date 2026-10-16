@@ -1,0 +1,26 @@
+{
+  "name": "224-live-house-orders",
+  "version": "1.0.0",
+  "private": true,
+  "description": "QR cocktail ordering system for 224 Live House with Telegram-managed service, billing and thermal receipts",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning src/index.ts",
+    "admin": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning src/cli.ts",
+    "test": "node --disable-warning=ExperimentalWarning --test --test-concurrency=1 test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "pdfkit": "^0.17.2",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "@types/pdfkit": "^0.17.6",
+    "@types/qrcode": "^1.5.6",
+    "typescript": "^5.9.3"
+  }
+}
