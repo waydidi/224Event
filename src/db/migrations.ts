@@ -276,7 +276,26 @@ const seedMenu = [
   ),
 ].join('\n');
 
+// Classic recipes use the standard IBA-style ingredients; signature cocktails
+// are left empty until the bar provides their recipes (item:update --ingredients).
+const ingredients = `
+ALTER TABLE menu_items ADD COLUMN ingredients TEXT NOT NULL DEFAULT '[]';
+UPDATE menu_items SET ingredients = '["Gin", "Campari", "Sweet vermouth", "Orange peel"]' WHERE code = 'negroni';
+UPDATE menu_items SET ingredients = '["Bourbon whiskey", "Sugar", "Angostura bitters", "Orange peel"]' WHERE code = 'old-fashioned';
+UPDATE menu_items SET ingredients = '["Citrus vodka", "Triple sec", "Cranberry juice", "Lime juice"]' WHERE code = 'cosmopolitan';
+UPDATE menu_items SET ingredients = '["Vodka", "Coffee liqueur", "Espresso", "Sugar syrup"]' WHERE code = 'espresso-martini';
+UPDATE menu_items SET ingredients = '["Tequila", "Triple sec", "Lime juice", "Salt rim"]' WHERE code = 'margarita';
+UPDATE menu_items SET ingredients = '["White rum", "Lime", "Mint", "Sugar", "Soda water"]' WHERE code = 'mojito';
+UPDATE menu_items SET ingredients = '["White rum", "Lime juice", "Sugar syrup"]' WHERE code = 'daiquiri';
+UPDATE menu_items SET ingredients = '["Bourbon whiskey", "Lemon juice", "Sugar syrup", "Egg white", "Angostura bitters"]' WHERE code = 'whiskey-sour';
+UPDATE menu_items SET ingredients = '["Gin", "Dry vermouth", "Olive"]' WHERE code = 'martini';
+UPDATE menu_items SET ingredients = '["Vodka", "Gin", "White rum", "Tequila", "Triple sec", "Lemon juice", "Cola"]' WHERE code = 'long-island-iced-tea';
+UPDATE menu_items SET ingredients = '["Rye whiskey", "Sweet vermouth", "Angostura bitters", "Cherry"]' WHERE code = 'manhattan';
+UPDATE menu_items SET ingredients = '["Gin", "Lemon juice", "Sugar syrup", "Soda water"]' WHERE code = 'gin-fizz';
+`;
+
 export const migrations: Migration[] = [
   { version: 1, name: 'schema', sql: schema },
   { version: 2, name: 'seed_menu', sql: seedMenu },
+  { version: 3, name: 'menu_ingredients', sql: ingredients },
 ];

@@ -13,6 +13,8 @@ export interface MenuItemRow {
   image_url: string | null;
   available: number;
   prep_note: string | null;
+  /** JSON array of ingredient names shown on the item's detail page. */
+  ingredients: string;
   sort_order: number;
 }
 
@@ -58,15 +60,17 @@ export function setAvailability(ctx: Ctx, query: string, available: boolean, act
   });
 }
 
-export function updateItemDetails(ctx: Ctx, query: string, fields: { description?: string | null; image_url?: string | null; prep_note?: string | null }) {
+export function updateItemDetails(ctx: Ctx, query: string, fields: { description?: string | null; image_url?: string | null; prep_note?: string | null; ingredients?: string[] }) {
   return ctx.db.tx(() => {
     const item = findMenuItem(ctx.db, query);
-    const next = { description: item.description, image_url: item.image_url, prep_note: item.prep_note, ...fields };
+    const { ingredients: list, ...rest } = fields;
+    const next = { description: item.description, image_url: item.image_url, prep_note: item.prep_note, ...rest };
+    const ingredients = list ? JSON.stringify(list.map((s) => s.trim()).filter(Boolean).slice(0, 12)) : item.ingredients;
     if (next.image_url && !/^(https:\/\/|\/)/.test(next.image_url)) throw new Error('image_url must be https:// or a site-relative path');
-    ctx.db.run('UPDATE menu_items SET description = ?, image_url = ?, prep_note = ?, updated_at = ? WHERE id = ?', [
-      next.description, next.image_url, next.prep_note, ctx.now().toISOString(), item.id,
+    ctx.db.run('UPDATE menu_items SET description = ?, image_url = ?, prep_note = ?, ingredients = ?, updated_at = ? WHERE id = ?', [
+      next.description, next.image_url, next.prep_note, ingredients, ctx.now().toISOString(), item.id,
     ]);
     audit(ctx, { type: 'system' }, 'menu.update_details', 'menu_item', item.id, fields);
-    return { ...item, ...next };
+    return { ...item, ...next, ingredients };
   });
 }
