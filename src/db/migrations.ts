@@ -434,6 +434,10 @@ UPDATE menu_items SET name = '33 — 三十三' WHERE code = 'ken-33';
 UPDATE menu_items SET name = 'INFINITY ∞' WHERE code = 'ken-infinity';
 `;
 
+const mangoPhoto = `
+UPDATE menu_items SET image_url = '/static/menu/mango-sticky-rice.webp', thumb_url = '/static/menu/mango-sticky-rice-thumb.webp', full_url = '/static/menu/mango-sticky-rice-full.webp' WHERE code = 'mango-sticky-rice';
+`;
+
 export const migrations: Migration[] = [
   { version: 1, name: 'schema', sql: schema },
   { version: 2, name: 'seed_menu', sql: seedMenu },
@@ -460,4 +464,5 @@ export const migrations: Migration[] = [
   { version: 19, name: 'infinity_details', sql: infinityDetails },
   { version: 20, name: 'ken_33_details', sql: ken33Details },
   { version: 21, name: 'display_names', sql: displayNames },
+  { version: 22, name: 'mango_sticky_rice_photo', sql: mangoPhoto },
 ];
