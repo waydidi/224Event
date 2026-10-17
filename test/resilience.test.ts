@@ -93,15 +93,15 @@ describe('reliability & security', () => {
     for (const u of [basket.imageUrl, basket.thumbUrl, basket.fullUrl]) assert.equal((await http(env, 'GET', u)).status, 200);
     const k224 = menu.data.categories[0].items.find((i: any) => i.name === '224');
     for (const u of [k224.imageUrl, k224.thumbUrl, k224.fullUrl]) assert.equal((await http(env, 'GET', u)).status, 200);
-    for (const n of ['33', 'Infinity']) {
+    for (const n of ['33 — 三十三', 'INFINITY ∞']) {
       const it = menu.data.categories[0].items.find((i: any) => i.name === n);
       for (const u of [it.imageUrl, it.thumbUrl, it.fullUrl]) assert.equal((await http(env, 'GET', u)).status, 200);
     }
-    const k33 = menu.data.categories[0].items.find((i: any) => i.name === '33');
+    const k33 = menu.data.categories[0].items.find((i: any) => i.name === '33 — 三十三');
     assert.match(k33.description, /^Somewhere between what has passed/);
     assert.match(k33.description, /beauty of the in-between\.$/);
     assert.deepEqual(k33.ingredients, ['Bijofu Tokubetsu Junmai', 'Newby Oriental Sencha', 'Sea salt', 'Wild honey']);
-    const inf = menu.data.categories[0].items.find((i: any) => i.name === 'Infinity');
+    const inf = menu.data.categories[0].items.find((i: any) => i.name === 'INFINITY ∞');
     assert.match(inf.description, /^We mistake endings for disappearance\.\n\n/);
     assert.match(inf.description, /sweetness and desire\.$/);
     assert.deepEqual(inf.ingredients, ['Pink Gin', 'Chrysanthemum', 'Wild Honey', 'Rose']);

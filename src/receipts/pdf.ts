@@ -26,16 +26,20 @@ export interface ReceiptItem {
   lineTotalSatang: number;
 }
 
+/** The receipt font has no CJK glyphs: "33 — 三十三" prints as "33". */
+const receiptName = (name: string) => name.replace(/[\u3000-\u9fff\uff00-\uffef]+/g, '').replace(/[\s—-]+$/, '').trim() || name;
+
 /** Same item at the same price across several orders prints as one line. */
 export function receiptItems(d: ReceiptData): ReceiptItem[] {
   const map = new Map<string, ReceiptItem>();
   for (const l of d.lines) {
-    const key = `${l.itemName}\u0000${l.unitPriceSatang}`;
+    const name = receiptName(l.itemName);
+    const key = `${name}\u0000${l.unitPriceSatang}`;
     const cur = map.get(key);
     if (cur) {
       cur.quantity += l.quantity;
       cur.lineTotalSatang += l.lineTotalSatang;
-    } else map.set(key, { name: l.itemName, quantity: l.quantity, unitPriceSatang: l.unitPriceSatang, lineTotalSatang: l.lineTotalSatang });
+    } else map.set(key, { name, quantity: l.quantity, unitPriceSatang: l.unitPriceSatang, lineTotalSatang: l.lineTotalSatang });
   }
   return [...map.values()];
 }

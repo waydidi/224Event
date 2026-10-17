@@ -428,6 +428,12 @@ const ken33Details = `
 UPDATE menu_items SET description = ${q(ken33Story)}, ingredients = ${q(JSON.stringify(ken33Ingredients))} WHERE code = 'ken-33';
 `;
 
+// Display names as the bar writes them.
+const displayNames = `
+UPDATE menu_items SET name = '33 — 三十三' WHERE code = 'ken-33';
+UPDATE menu_items SET name = 'INFINITY ∞' WHERE code = 'ken-infinity';
+`;
+
 export const migrations: Migration[] = [
   { version: 1, name: 'schema', sql: schema },
   { version: 2, name: 'seed_menu', sql: seedMenu },
@@ -453,4 +459,5 @@ export const migrations: Migration[] = [
   { version: 18, name: 'launch_prices', sql: launchPrices },
   { version: 19, name: 'infinity_details', sql: infinityDetails },
   { version: 20, name: 'ken_33_details', sql: ken33Details },
+  { version: 21, name: 'display_names', sql: displayNames },
 ];
