@@ -5,7 +5,7 @@ primary_region = "sin"   # Singapore: closest to Bangkok
 [build]
 
 [env]
-  PUBLIC_BASE_URL = "https://REPLACE-WITH-YOUR-DOMAIN"
+  PUBLIC_BASE_URL = "https://orders.224livehouse.com"
   DISPLAY_TIMEZONE = "Asia/Bangkok"
 
 [mounts]

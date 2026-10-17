@@ -5,7 +5,7 @@ Cloudflare provides the domain, DNS and HTTPS in front of it. Run everything bel
 Keep **one** Fly machine only (SQLite must not be shared by two servers).
 
 ## 1. Buy the domain
-Cloudflare dashboard → **Domains → Registrations** → search, buy (e.g. `224livehouse.com`).
+Cloudflare dashboard → **Domains → Registrations** → search, buy (`224livehouse.com`, bought).
 
 ## 2. Create the Fly app
 ```bash
@@ -14,7 +14,7 @@ fly auth signup                # or: fly auth login   (needs a card)
 fly launch --copy-config --no-deploy        # pick a unique app name when asked; keep region sin
 fly volumes create data --size 1 --region sin
 ```
-Edit `fly.toml`: set `PUBLIC_BASE_URL = "https://orders.YOURDOMAIN.com"` (or the bare domain).
+Edit `fly.toml`: set `PUBLIC_BASE_URL = "https://orders.224livehouse.com"` (or the bare domain).
 
 ## 3. Secrets (never put these in git)
 ```bash
@@ -34,10 +34,10 @@ fly scale count 1
 
 ## 5. Point the domain at it
 ```bash
-fly certs add orders.YOURDOMAIN.com        # shows the DNS record to create
+fly certs add orders.224livehouse.com        # shows the DNS record to create
 ```
 Cloudflare dashboard → your domain → **DNS → Add record**: `CNAME`, name `orders`, target `<app>.fly.dev`,
-proxy **DNS only** (grey cloud) until `fly certs show orders.YOURDOMAIN.com` says the certificate is issued.
+proxy **DNS only** (grey cloud) until `fly certs show orders.224livehouse.com` says the certificate is issued.
 Then, if you want Cloudflare's proxy (orange cloud), set **SSL/TLS → Full (strict)**.
 
 ## 6. Set up the venue on the live server
