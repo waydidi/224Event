@@ -442,6 +442,10 @@ const lostCherryPhoto = `
 UPDATE menu_items SET image_url = '/static/menu/lost-cherry.webp', thumb_url = '/static/menu/lost-cherry-thumb.webp', full_url = '/static/menu/lost-cherry-full.webp' WHERE code = 'lost-cherry';
 `;
 
+const espressoMartiniPhoto = `
+UPDATE menu_items SET image_url = '/static/menu/espresso-martini.webp', thumb_url = '/static/menu/espresso-martini-thumb.webp', full_url = '/static/menu/espresso-martini-full.webp' WHERE name = 'Espresso Martini';
+`;
+
 export const migrations: Migration[] = [
   { version: 1, name: 'schema', sql: schema },
   { version: 2, name: 'seed_menu', sql: seedMenu },
@@ -470,4 +474,5 @@ export const migrations: Migration[] = [
   { version: 21, name: 'display_names', sql: displayNames },
   { version: 22, name: 'mango_sticky_rice_photo', sql: mangoPhoto },
   { version: 23, name: 'lost_cherry_photo', sql: lostCherryPhoto },
+  { version: 24, name: 'espresso_martini_photo', sql: espressoMartiniPhoto },
 ];
