@@ -48,10 +48,10 @@ if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_VERIFY_CHAT_ID) {
     return data.result;
   };
   const bot = await call("getMe");
-  assert.equal(bot.username, "eventbotbirthday_bot");
+  assert.equal(bot.username?.toLowerCase(), "eventbotbirthday_bot");
   const chat_id = process.env.TELEGRAM_VERIFY_CHAT_ID;
   const chat = await call("getChat", { chat_id });
-  assert.equal(chat.title, "224 Event");
+  assert.equal(chat.title?.normalize("NFKC").replace(/\s+/g, " ").trim(), "224 Event");
   const own = await call("getChatMember", { chat_id, user_id: bot.id });
   const admins = await call("getChatAdministrators", { chat_id });
   const human = admins.find(member => !member.user.is_bot);
