@@ -32,6 +32,7 @@ Cloudflare creates the database and attaches `orders.224livehouse.com` (the doma
 Open https://orders.224livehouse.com — it works as soon as the certificate is issued (about a minute).
 
 ## 4. Set up the venue (no shell needed)
+(The venue runs without a PIN: staff open the table, and anyone who scans its QR can order. Set `REQUIRE_PIN` to `"true"` in `wrangler.jsonc` to bring the PIN back.)
 ```bash
 export ADMIN_URL=https://orders.224livehouse.com
 export ADMIN_TOKEN=<the INTERNAL_API_TOKEN you chose>

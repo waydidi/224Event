@@ -76,16 +76,16 @@ try {
 
   assert.equal((await api('POST', '/api/integrations/telegram/webhook', { update_id: 1 }, { ...HOOK, 'x-telegram-bot-api-secret-token': 'wrong' })).status, 401);
   await say('/open_table 1');
-  const opened = await until('open-table card', () => calls.find((c) => c.method === 'sendMessage' && /Join PIN/.test(c.body?.text ?? '')));
-  const joinPin = /Join PIN: <code>(\d+)<\/code>/.exec(opened.body.text)![1];
-  step(`staff opened table 1 from Telegram (PIN ${joinPin})`);
+  const opened = await until('open-table card', () => calls.find((c) => c.method === 'sendMessage' && /TABLE 1 OPENED/.test(c.body?.text ?? '')));
+  const joinPin = /Join PIN: <code>(\d+)<\/code>/.exec(opened.body.text)?.[1]; // absent when the venue runs without a PIN
+  step(`staff opened table 1 from Telegram (${joinPin ? `PIN ${joinPin}` : 'no PIN needed'})`);
 
   const table = await api('GET', `/api/public/table/${qrToken}`);
   assert.equal(table.data.table.number, 1);
-  const joined = await api('POST', '/api/public/session/join', { qrToken, pin: joinPin });
+  const joined = await api('POST', '/api/public/session/join', { qrToken, ...(joinPin ? { pin: joinPin } : {}) });
   assert.equal(joined.status, 200, JSON.stringify(joined.data));
   const bearer = { authorization: `Bearer ${joined.data.visitToken}` };
-  step('guest scanned the QR and joined with the PIN');
+  step('guest scanned the QR and joined');
 
   const menu = await api('GET', '/api/public/menu');
   assert.equal(menu.data.orderingEnabled, true);

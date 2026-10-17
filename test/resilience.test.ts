@@ -270,6 +270,31 @@ describe('reliability & security', () => {
     assert.equal((await scan()).data.notified, false);
   });
 
+  test('PIN switched off: anyone who scans an open table can join and order; with the PIN on, a missing PIN is refused', async () => {
+    const e = (env = await setup({ env: { REQUIRE_PIN: 'false' } }));
+    assert.equal((await http(e, 'GET', `/api/public/table/${e.qr(1)}`)).data.pinRequired, false);
+    // Closed table: nobody can join yet.
+    assert.equal((await http(e, 'POST', '/api/public/session/join', { qrToken: e.qr(1) })).status, 409);
+    await command(e, USERS.cashier, '/open_table 1');
+    const opened = e.tg.sent((t) => t.includes('TABLE 1 OPENED'))[0];
+    assert.ok(!opened.params.text.includes('PIN'));
+    assert.ok(!opened.params.reply_markup);
+    // Two guests scan the QR; neither needs a PIN; each gets their own token and can order.
+    const g1 = await http(e, 'POST', '/api/public/session/join', { qrToken: e.qr(1) });
+    const g2 = await http(e, 'POST', '/api/public/session/join', { qrToken: e.qr(1) });
+    assert.equal(g1.status, 200);
+    assert.equal(g2.status, 200);
+    assert.notEqual(g1.data.visitToken, g2.data.visitToken);
+    assert.equal((await order(e, g1.data.visitToken, [['negroni', 1]])).status, 201);
+    assert.equal((await order(e, g2.data.visitToken, [['mojito', 1]])).status, 201);
+    // Default (PIN on): joining without a PIN is refused.
+    const e2 = (env = await setup());
+    await openTable(e2, 1);
+    assert.equal((await http(e2, 'POST', '/api/public/session/join', { qrToken: e2.qr(1) })).status, 400);
+    assert.equal((await http(e2, 'GET', `/api/public/table/${e2.qr(1)}`)).data.pinRequired, true);
+    await e.close();
+  });
+
   test('PIN brute force locks the session until staff issues a new PIN', async () => {
     env = await setup({ env: { PIN_MAX_FAILED_ATTEMPTS: '3' } });
     const s = await openTable(env, 1);

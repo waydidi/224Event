@@ -26,17 +26,18 @@ export interface CustomerAuth {
  * short-lived visit token bound to exactly one session. The QR alone never
  * grants access: a new round always requires the new PIN.
  */
-export function joinSession(ctx: Ctx, qrToken: string, pin: string) {
+export function joinSession(ctx: Ctx, qrToken: string, pin: string | undefined) {
   const table = getTableByQrToken(ctx.db, qrToken);
   if (!table) throw notFound('TABLE_NOT_FOUND', 'Unknown table');
   const outcome = ctx.db.tx(() => {
     const session = getActiveSession(ctx.db, table);
     if (!session) return { error: conflict('NO_ACTIVE_SESSION', 'This table is waiting for staff to open it.') };
     const max = ctx.config.access.pinMaxFailedAttempts;
-    if (session.pin_failed_attempts >= max) {
+    const needPin = ctx.config.access.requirePin;
+    if (needPin && session.pin_failed_attempts >= max) {
       return { error: new AppError(423, 'PIN_LOCKED', 'Too many incorrect PINs. Please ask staff for a new PIN.') };
     }
-    if (!/^\d+$/.test(pin) || !safeEqual(pin, session.join_pin)) {
+    if (needPin && (typeof pin !== 'string' || !/^\d+$/.test(pin) || !safeEqual(pin, session.join_pin))) {
       ctx.db.run('UPDATE table_sessions SET pin_failed_attempts = pin_failed_attempts + 1 WHERE id = ?', [session.id]);
       audit(ctx, { type: 'system' }, 'session.join_failed', 'session', session.id, { attempts: session.pin_failed_attempts + 1 });
       // Committed (not rolled back) so the attempt counter actually counts.

@@ -250,10 +250,16 @@
     }
     await refreshTable();
     const next = state.table && state.table.session ? 'join' : 'waiting';
+    const noPin = !!(state.table && state.table.pinRequired === false);
     // Notify when a guest arrives at an unopened table: on first load, and also when the table closes while a new guest is already looking at the PIN screen.
     if (next === 'waiting' && state.view !== 'waiting' && !endedOwnSession) announceWaiting();
     state.view = next;
     render();
+    // No PIN at this venue: anyone who scans an open table joins straight away (unless they just finished a visit on this phone).
+    if (next === 'join' && noPin && !state.lastVisit && !state.joining && !state.token) {
+      state.joining = true;
+      try { await join(undefined); } finally { state.joining = false; }
+    }
   }
 
   const lastKey = qrToken ? `224:last:${qrToken}` : '';
@@ -429,7 +435,16 @@
       h('p', { class: 'small muted checking' }, h('span', { class: 'pulse', 'aria-hidden': 'true' }), ' Checking…')))];
   }
 
+  function viewJoinNoPin() {
+    const t = state.table.table;
+    return [header(), lastVisitNote(), h('div', { class: 'hero' },
+      h('h2', {}, `Welcome to ${t.name || 'your table'}`),
+      state.joinError ? h('div', { class: 'alert error', role: 'alert' }, state.joinError) : h('p', {}, state.busy ? 'Joining…' : 'Ready when you are.'),
+      h('div', { class: 'section' }, h('button', { class: 'btn', type: 'button', disabled: state.busy, onclick: () => join(undefined) }, state.busy ? 'Joining…' : 'Start ordering')))];
+  }
+
   function viewJoin() {
+    if (state.table.pinRequired === false) return viewJoinNoPin();
     const len = state.table.pinLength || 2;
     const input = h('input', { class: `pin pin-${len}`, id: 'pin', inputmode: 'numeric', autocomplete: 'one-time-code', pattern: '[0-9]*', maxlength: len, 'aria-describedby': 'pin-help', 'aria-label': 'Table PIN', required: true,
       oninput: (e) => {

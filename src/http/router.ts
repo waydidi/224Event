@@ -152,6 +152,7 @@ export function createHandler(ctx: Ctx, tg: TelegramClient, files: StaticFiles) 
         venue: ctx.config.venue.name,
         table: { number: table.display_number, name: table.name },
         pinLength: ctx.config.access.pinLength,
+        pinRequired: ctx.config.access.requirePin,
         session: session ? { code: session.session_code, status: session.status } : null,
       },
     };
@@ -186,8 +187,8 @@ export function createHandler(ctx: Ctx, tg: TelegramClient, files: StaticFiles) 
   add('POST', '/api/public/session/join', (req) => {
     limit(`join:${req.ip}`, 300); // guessing the PIN is stopped per session by the attempt lock, not by address
     const b = (req.body ?? {}) as Record<string, unknown>;
-    if (typeof b.qrToken !== 'string' || typeof b.pin !== 'string') throw badRequest('INVALID_REQUEST', 'Please enter the PIN from staff.');
-    return { json: joinSession(ctx, b.qrToken, b.pin.trim()) };
+    if (typeof b.qrToken !== 'string' || (ctx.config.access.requirePin && typeof b.pin !== 'string')) throw badRequest('INVALID_REQUEST', 'Please enter the PIN from staff.');
+    return { json: joinSession(ctx, b.qrToken, typeof b.pin === 'string' ? b.pin.trim() : undefined) };
   });
 
   add('POST', '/api/public/orders', (req) => {

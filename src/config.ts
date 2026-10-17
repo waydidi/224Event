@@ -36,6 +36,8 @@ export interface Config {
   };
   access: {
     visitTokenTtlHours: number;
+    /** When false, anyone who scans the QR of an open table can order (no PIN screen). */
+    requirePin: boolean;
     pinLength: number;
     pinMaxFailedAttempts: number;
   };
@@ -109,6 +111,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, overrides: Part
     },
     access: {
       visitTokenTtlHours: int(env.VISIT_TOKEN_TTL_HOURS, 12, 'VISIT_TOKEN_TTL_HOURS') || 12,
+      requirePin: bool(env.REQUIRE_PIN, true),
       pinLength: pinLength(env.PIN_LENGTH),
       pinMaxFailedAttempts: int(env.PIN_MAX_FAILED_ATTEMPTS, 5, 'PIN_MAX_FAILED_ATTEMPTS') || 5,
     },

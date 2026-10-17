@@ -94,6 +94,16 @@ function requireTable(db: Database, n: number) {
 }
 
 function announceSession(ctx: Ctx, session: SessionRow, table: TableRow, heading: string, staffName: string) {
+  if (!ctx.config.access.requirePin) {
+    enqueue(ctx, 'telegram.text', {
+      kind: 'session_opened',
+      text:
+        `🟢 <b>${heading}</b>\n` +
+        `Table: ${table.display_number}\nSession: ${session.session_code}\n` +
+        `By: ${escapeHtml(staffName)}\n\nGuests can scan the table's QR code and order now.`,
+    });
+    return;
+  }
   const pinAction = createAction(ctx, 'table.pin', 'table', table.display_number);
   enqueue(ctx, 'telegram.text', {
     kind: 'session_opened',
@@ -205,7 +215,7 @@ export function notifyTableWaiting(ctx: Ctx, table: TableRow): { notified: boole
     const openAction = createAction(ctx, 'table.open', 'table', table.display_number, { tableNumber: table.display_number });
     enqueue(ctx, 'telegram.text', {
       kind: 'table_waiting',
-      text: `📲 <b>Table ${table.display_number}</b> scanned the QR code and is waiting for staff.\nTap to open the table and get the PIN for the guests.`,
+      text: `📲 <b>Table ${table.display_number}</b> scanned the QR code and is waiting for staff.\nTap to open the table so the guests can order.`,
       buttons: [[{ text: `✅ Open table ${table.display_number}`, actionId: openAction }]],
     }, key);
     return true;
