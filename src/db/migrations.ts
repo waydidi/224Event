@@ -345,6 +345,16 @@ const naokoDetails = `
 UPDATE menu_items SET description = ${q(naokoStory)}, ingredients = ${q(JSON.stringify(naokoIngredients))} WHERE code = 'naoko';
 `;
 
+// Full-resolution pictures shown when a guest taps the photo on a drink's page.
+const fullPhotos = `
+ALTER TABLE menu_items ADD COLUMN full_url TEXT;
+UPDATE menu_items SET full_url = '/static/menu/the-morning-light-full.webp' WHERE code = 'the-morning-light';
+UPDATE menu_items SET full_url = '/static/menu/naoko-full.webp' WHERE code = 'naoko';
+`;
+
+// The birthday category is named after Kenneth. (The internal code stays 'kens-birthday' so item codes and links keep working.)
+const kennethName = `UPDATE menu_categories SET name = 'Kenneth’s Birthday Special' WHERE code = 'kens-birthday';`;
+
 export const migrations: Migration[] = [
   { version: 1, name: 'schema', sql: schema },
   { version: 2, name: 'seed_menu', sql: seedMenu },
@@ -360,4 +370,6 @@ export const migrations: Migration[] = [
   { version: 8, name: 'order_item_notes', sql: itemNotes },
   { version: 9, name: 'naoko_photo', sql: naokoPhoto },
   { version: 10, name: 'naoko_details', sql: naokoDetails },
+  { version: 11, name: 'full_size_photos', sql: fullPhotos },
+  { version: 12, name: 'kenneth_birthday_name', sql: kennethName },
 ];

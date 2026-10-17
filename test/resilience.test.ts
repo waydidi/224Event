@@ -67,7 +67,7 @@ describe('reliability & security', () => {
     assert.equal(env.app.ctx.db.get<{ c: number }>('SELECT COUNT(*) AS c FROM menu_items')!.c, 21);
     const menu = await http(env, 'GET', '/api/public/menu');
     assert.equal(menu.data.orderingEnabled, false);
-    assert.deepEqual(menu.data.categories.map((c: any) => [c.name, c.items.length]), [['Ken’s birthday Special', 3], ['Signature Cocktails', 6], ['Classic Cocktails', 12]]);
+    assert.deepEqual(menu.data.categories.map((c: any) => [c.name, c.items.length]), [['Kenneth’s Birthday Special', 3], ['Signature Cocktails', 6], ['Classic Cocktails', 12]]);
     const negroni = menu.data.categories[2].items.find((i: any) => i.name === 'Negroni');
     assert.deepEqual(negroni.ingredients, ['Gin', 'Campari', 'Sweet vermouth', 'Orange peel']);
     assert.deepEqual(menu.data.categories[1].items[0].ingredients, []); // signature recipes come from the bar
@@ -84,7 +84,9 @@ describe('reliability & security', () => {
     const naoko = menu.data.categories[1].items.find((i: any) => i.name === 'Naoko');
     assert.equal(naoko.imageUrl, '/static/menu/naoko.webp');
     assert.equal(naoko.thumbUrl, '/static/menu/naoko-thumb.webp');
-    for (const u of [naoko.imageUrl, naoko.thumbUrl]) assert.equal((await http(env, 'GET', u)).status, 200);
+    assert.equal(naoko.fullUrl, '/static/menu/naoko-full.webp');
+    assert.equal(light.fullUrl, '/static/menu/the-morning-light-full.webp');
+    for (const u of [naoko.imageUrl, naoko.thumbUrl, naoko.fullUrl, light.fullUrl]) assert.equal((await http(env, 'GET', u)).status, 200);
     assert.match(naoko.description, /^Naoko is a vivid green cocktail that conceals a quiet melancholy/);
     assert.match(naoko.description, /until the final notes are all that remain\.$/);
     assert.deepEqual(naoko.ingredients, ['Mexicat Tequila', 'Green Fanta (preferably zero sugar)', 'Midori Melon Liqueur', 'Chrysanthemum Liqueur', 'Lime Juice', 'Saline solution', 'Keto Green Apple Syrup', 'Fresh Cucumbers', 'Fresh Orange Peels', 'Fresh Mint leaves']);

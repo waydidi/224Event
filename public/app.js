@@ -34,6 +34,9 @@
     detailId: null,
     detailQty: 1,
     detailNote: '',
+    lightbox: false,
+    lbPushed: false,
+    ignorePop: false,
     detailPushed: false,
     errorText: '',
   };
@@ -494,7 +497,54 @@
     render();
     restoreMenuScroll();
   }
-  window.addEventListener('popstate', () => closeDetail(true));
+  window.addEventListener('popstate', () => {
+    if (state.ignorePop) { state.ignorePop = false; return; } // the history step we took ourselves when closing by tap
+    if (state.lightbox) { state.lbPushed = false; closeLightbox(true); return; } // back gesture closes the picture, not the page
+    closeDetail(true);
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && state.lightbox) closeLightbox(false); });
+
+  /** Full-screen picture viewer. */
+  function openLightbox() {
+    state.lightbox = true;
+    try { history.pushState({ picture: true }, ''); state.lbPushed = true; } catch { state.lbPushed = false; }
+    render();
+    const btn = document.getElementById('lb-close');
+    if (btn) btn.focus({ preventScroll: true });
+  }
+  function closeLightbox(viaHistory) {
+    if (!state.lightbox) return;
+    state.lightbox = false;
+    if (!viaHistory && state.lbPushed) { state.lbPushed = false; state.ignorePop = true; try { history.back(); } catch { state.ignorePop = false; } }
+    render();
+  }
+  function lightboxView(item) {
+    const src = item.fullUrl || item.imageUrl;
+    return h('div', { class: 'lightbox', role: 'dialog', 'aria-modal': 'true', 'aria-label': `${item.name}, full-size picture`, onclick: () => closeLightbox(false) },
+      h('img', { src, alt: item.name }),
+      h('button', { type: 'button', id: 'lb-close', class: 'lb-close', 'aria-label': 'Close picture', onclick: (e) => { e.stopPropagation(); closeLightbox(false); } },
+        svg([['path', { d: 'M6 6l12 12M18 6L6 18' }]])));
+  }
+
+  /** The white sheet slides over the picture as the page scrolls; tapping the grab bar moves it between peek and expanded. */
+  const sheetExpandedAt = () => {
+    const sheet = $app.querySelector('.detail-sheet');
+    if (!sheet) return 0;
+    return Math.max(0, sheet.offsetTop - (parseFloat(getComputedStyle(sheet).scrollMarginTop) || 0));
+  };
+  function updateSheetProgress() {
+    const sc = $app.querySelector('.detail-scroll');
+    const detail = $app.querySelector('.detail');
+    if (!sc || !detail) return;
+    const max = sheetExpandedAt() || 1;
+    detail.style.setProperty('--p', Math.min(1, Math.max(0, sc.scrollTop / max)).toFixed(3)); // dims the picture a little as it is covered
+  }
+  function toggleSheet() {
+    const sc = $app.querySelector('.detail-scroll');
+    if (!sc) return;
+    const top = sheetExpandedAt();
+    sc.scrollTo({ top: sc.scrollTop < top / 2 ? top : 0, behavior: reduceMotion() ? 'auto' : 'smooth' });
+  }
 
   function viewDetail(item) {
     const enabled = state.status.orderingEnabled && state.menu.orderingEnabled;
@@ -502,7 +552,6 @@
     const inCart = itemQty(item.id);
     const maxAdd = Math.max(0, 20 - inCart);
     const qty = Math.min(state.detailQty, Math.max(1, maxAdd));
-    const signature = state.menu.categories.find((c) => c.items.includes(item))?.code === 'signature';
     const ingredients = item.ingredients || [];
     const noteField = h('textarea', { id: 'detail-note', maxlength: 100, rows: 2, placeholder: 'e.g. less ice, no honey', 'aria-describedby': 'detail-note-help',
       oninput: (e) => { state.detailNote = e.target.value; } });
@@ -513,25 +562,26 @@
       : null;
     return [h('div', { class: 'detail' },
       h('div', { class: 'detail-hero' },
-        item.imageUrl
-          ? h('img', { class: 'hero-img', src: item.imageUrl, alt: item.name })
-          : glassIcon('hero-glass'),
-        h('button', { type: 'button', class: 'detail-back', 'aria-label': 'Back to menu', onclick: () => closeDetail(false) },
-          svg([['path', { d: 'M19 12H5M11 6l-6 6 6 6' }]]))),
-      h('section', { class: 'detail-sheet', 'aria-labelledby': 'detail-name' },
-        h('div', { class: 'detail-title' },
-          h('h2', { id: 'detail-name' }, item.name),
-          signature ? h('span', { class: 'badge-sig' }, svg([['path', { d: 'M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z' }]]), 'Signature') : null),
-        item.description ? h('p', { class: 'detail-desc' }, item.description) : null,
-        h('div', { class: 'detail-price' }, item.priceSatang ? baht(item.priceSatang) : 'Price TBA'),
-        h('h3', { class: 'detail-label' }, 'Ingredients'),
-        ingredients.length
-          ? h('ul', { class: 'ing-list' }, ingredients.map((n) => h('li', { class: 'ing' }, n)))
-          : h('p', { class: 'muted small' }, 'Ask our bartenders what goes into this one.'),
-        h('div', { class: 'detail-notes' },
-          h('label', { for: 'detail-note' }, 'Note to staff'),
-          noteField,
-          h('p', { id: 'detail-note-help', class: 'small muted' }, 'Allergies or preferences for this drink (optional).'))),
+        item.imageUrl ? h('img', { class: 'hero-img', src: item.imageUrl, alt: item.name }) : glassIcon('hero-glass')),
+      h('div', { class: 'detail-scroll', onscroll: updateSheetProgress },
+        // The clear area over the picture: a tap opens it full size, a drag pulls the sheet up.
+        h('div', { class: 'detail-spacer' },
+          item.imageUrl ? h('button', { type: 'button', class: 'hero-open', 'aria-label': `View ${item.name} picture full size`, onclick: openLightbox }) : null),
+        h('section', { class: 'detail-sheet', 'aria-labelledby': 'detail-name' },
+          h('button', { type: 'button', class: 'sheet-grab', 'aria-label': 'Expand or collapse the details', onclick: toggleSheet }, h('span', { class: 'sheet-grab-bar' })),
+          h('div', { class: 'detail-title' }, h('h2', { id: 'detail-name' }, item.name)),
+          item.description ? h('p', { class: 'detail-desc' }, item.description) : null,
+          h('div', { class: 'detail-price' }, item.priceSatang ? baht(item.priceSatang) : 'Price TBA'),
+          h('h3', { class: 'detail-label' }, 'Ingredients'),
+          ingredients.length
+            ? h('ul', { class: 'ing-list' }, ingredients.map((n) => h('li', { class: 'ing' }, n)))
+            : h('p', { class: 'muted small' }, 'Ask our bartenders what goes into this one.'),
+          h('div', { class: 'detail-notes' },
+            h('label', { for: 'detail-note' }, 'Note to staff'),
+            noteField,
+            h('p', { id: 'detail-note-help', class: 'small muted' }, 'Allergies or preferences for this drink (optional).')))),
+      h('button', { type: 'button', class: 'detail-back', 'aria-label': 'Back to menu', onclick: () => closeDetail(false) },
+        svg([['path', { d: 'M19 12H5M11 6l-6 6 6 6' }]])),
       h('div', { class: 'cta-bar' }, h('div', { class: 'detail-cta' },
         h('div', { class: 'qty', role: 'group', 'aria-label': `Quantity of ${item.name}` },
           h('button', { type: 'button', 'aria-label': 'One less', disabled: !orderable || qty <= 1, onclick: () => { state.detailQty = qty - 1; render(); } }, '−'),
@@ -541,7 +591,7 @@
           addWithNote(item.id, cleanNote(state.detailNote), qty);
           announce(`Added ${qty} ${item.name} to cart`);
           closeDetail(false);
-        } }, label || `Add to Cart (${baht(item.priceSatang * qty)})`))))];
+        } }, label || `Add to Cart (${baht(item.priceSatang * qty)})`)))), state.lightbox ? lightboxView(item) : null];
   }
 
   // ---------- menu: category pills follow the scroll ----------
@@ -756,15 +806,15 @@
     const focusId = active && active.id;
     const sel = active && 'selectionStart' in active ? [active.selectionStart, active.selectionEnd] : null;
     const tabsScroll = document.querySelector('.tabs')?.scrollLeft ?? 0; // keep pill row position across re-renders
-    const sheetScroll = document.querySelector('.detail-sheet')?.scrollTop ?? 0; // and the cocktail text panel's
+    const sheetScroll = document.querySelector('.detail-scroll')?.scrollTop ?? 0; // and the cocktail page's pulled-up sheet
     $app.replaceChildren(...nodes.flat().filter(Boolean));
     $app.classList.toggle('is-waiting', state.view === 'waiting');
     $app.classList.toggle('is-detail', !!$app.querySelector('.detail'));
     $app.classList.toggle('has-nav', !!$app.querySelector('.float-nav'));
     $app.classList.toggle('has-cta', !!$app.querySelector('.cta-bar'));
     if (!$app.querySelector('.float-nav')) setNavHidden(false); // start visible whenever the bar comes back
-    const sheet = document.querySelector('.detail-sheet');
-    if (sheet) sheet.scrollTop = sheetScroll;
+    const sheet = document.querySelector('.detail-scroll');
+    if (sheet) { sheet.scrollTop = sheetScroll; updateSheetProgress(); }
     const tabs = document.querySelector('.tabs');
     if (tabs) {
       tabs.scrollLeft = tabsScroll;

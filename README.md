@@ -41,7 +41,7 @@ npm run typecheck
 
 ## Going live checklist (spec §15)
 
-1. **Prices.** Every one of the 21 drinks (6 signature, 12 classic, and the 3 in "Ken’s birthday Special": 224, 33, Infinity) needs an approved price. **Ordering stays disabled until they all have one.** The menu is seeded with `NULL` prices on purpose. Set them with:
+1. **Prices.** Every one of the 21 drinks (6 signature, 12 classic, and the 3 in "Kenneth’s Birthday Special": 224, 33, Infinity) needs an approved price. **Ordering stays disabled until they all have one.** The menu is seeded with `NULL` prices on purpose. Set them with:
    ```bash
    npm run admin -- price:import prices.json   # { "lost-cherry": 280, "negroni": 220, ... }  (THB)
    npm run admin -- menu:list
