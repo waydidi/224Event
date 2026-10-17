@@ -245,6 +245,31 @@ describe('reliability & security', () => {
     assert.ok(order.some((p) => p.status === 429));
   });
 
+  test('after guests pay and leave, the next guests scanning the same QR notify the staff group again (even within minutes)', async () => {
+    const e = (env = await setup());
+    const scan = () => http(e, 'POST', `/api/public/table/${e.qr(1)}/arrived`, {});
+    const notices = () => e.tg.sent((t) => t.includes('Table 1') && t.includes('waiting for staff')).length;
+    assert.equal((await scan()).data.notified, true);
+    await e.drain();
+    const s1 = await openTable(e, 1);
+    const token = await join(e, 1, s1.join_pin);
+    assert.equal((await order(e, token, [['negroni', 1]])).status, 201);
+    const bill = (await http(e, 'GET', '/api/public/session/bill', undefined, auth(token))).data.bill;
+    await http(e, 'POST', '/api/public/session/request-payment', { expectedTotalSatang: bill.totalSatang, expectedOrderCount: bill.orderNumbers.length }, auth(token));
+    await e.drain();
+    const payCard = e.tg.sent((t) => t.includes('PAYMENT REQUESTED'))[0];
+    await tap(e, USERS.cashier, payCard.params.reply_markup.inline_keyboard[0][0].callback_data);
+    await e.drain();
+    // The table is closed. Two minutes later new guests scan the same QR.
+    e.advance(2 * 60_000);
+    assert.equal(notices(), 1);
+    assert.equal((await scan()).data.notified, true);
+    await e.drain();
+    assert.equal(notices(), 2);
+    // Several guests scanning in the same waiting period do not repeat it.
+    assert.equal((await scan()).data.notified, false);
+  });
+
   test('PIN brute force locks the session until staff issues a new PIN', async () => {
     env = await setup({ env: { PIN_MAX_FAILED_ATTEMPTS: '3' } });
     const s = await openTable(env, 1);

@@ -196,14 +196,18 @@ export function notifyTableWaiting(ctx: Ctx, table: TableRow): { notified: boole
   if (getActiveSession(ctx.db, table)) return { notified: false };
   const bucket = Math.floor(ctx.now().getTime() / ARRIVAL_COOLDOWN_MS);
   const queued = ctx.db.tx(() => {
-    const before = ctx.db.get<{ c: number }>('SELECT COUNT(*) AS c FROM outbox_events WHERE dedupe_key = ?', [`table.waiting:${table.id}:${bucket}`])!.c;
+    // One notice per waiting period: a table that was opened and closed since the last notice starts a new period
+    // (new guests right after the previous ones paid must always notify), and an unopened table is reminded every 10 minutes.
+    const round = ctx.db.get<{ r: number }>('SELECT COALESCE(MAX(round_number), 0) AS r FROM table_sessions WHERE table_id = ?', [table.id])!.r;
+    const key = `table.waiting:${table.id}:r${round}:${bucket}`;
+    const before = ctx.db.get<{ c: number }>('SELECT COUNT(*) AS c FROM outbox_events WHERE dedupe_key = ?', [key])!.c;
     if (before) return false;
     const openAction = createAction(ctx, 'table.open', 'table', table.display_number, { tableNumber: table.display_number });
     enqueue(ctx, 'telegram.text', {
       kind: 'table_waiting',
       text: `📲 <b>Table ${table.display_number}</b> scanned the QR code and is waiting for staff.\nTap to open the table and get the PIN for the guests.`,
       buttons: [[{ text: `✅ Open table ${table.display_number}`, actionId: openAction }]],
-    }, `table.waiting:${table.id}:${bucket}`);
+    }, key);
     return true;
   });
   if (queued) ctx.kick();

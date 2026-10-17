@@ -202,8 +202,6 @@
       state.errorText = e.status === 404 ? 'This QR code is not recognised. Please ask staff for help.' : e.message;
       return render();
     }
-    // Nobody has opened this table yet: let the staff group know a guest is waiting (once per page load; the server also rate-limits).
-    if (!state.table.session) api(`/api/public/table/${qrToken}/arrived`, { method: 'POST', body: {}, auth: false }).catch(() => {});
     state.token = storage.get(storeKey);
     try { state.lastVisit = JSON.parse(sessionStorage.getItem(lastKey) || 'null'); } catch { /* ignore */ }
     api('/api/public/menu', { auth: false }).then((menu) => { state.menu = menu; render(); }).catch(() => {});
@@ -216,7 +214,13 @@
     try { state.table = await api(`/api/public/table/${qrToken}`, { auth: false }); } catch { /* keep last */ }
   }
 
+  /** A guest is looking at a table nobody has opened: tell the staff group (the server de-duplicates per waiting period). */
+  function announceWaiting() {
+    api(`/api/public/table/${qrToken}/arrived`, { method: 'POST', body: {}, auth: false }).catch(() => {});
+  }
+
   async function refresh() {
+    let endedOwnSession = false; // the guest whose bill was just paid is leaving, not arriving
     if (state.token) {
       try {
         const prev = state.status;
@@ -228,6 +232,7 @@
           return render();
         }
         // Session is over (paid or closed): forget it and fall back to the table's default screen.
+        endedOwnSession = true;
         rememberLastVisit(state.status);
         clearCart();
         storage.del(storeKey);
@@ -244,7 +249,10 @@
       }
     }
     await refreshTable();
-    state.view = state.table && state.table.session ? 'join' : 'waiting';
+    const next = state.table && state.table.session ? 'join' : 'waiting';
+    // Notify when a guest arrives at an unopened table: on first load, and also when the table closes while a new guest is already looking at the PIN screen.
+    if (next === 'waiting' && state.view !== 'waiting' && !endedOwnSession) announceWaiting();
+    state.view = next;
     render();
   }
 
