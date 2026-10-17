@@ -1,0 +1,52 @@
+name: Venue admin (run a setup command on the live site)
+
+# GitHub → Actions → "Venue admin" → Run workflow. Examples:
+#   command: tables:ensure   args: 7
+#   command: telegram:set-webhook
+#   command: telegram:set-commands
+#   command: staff:add       args: 123456789 cashier Somchai
+#   command: check
+#   command: qr              (saves table-qr-codes.pdf as a downloadable artifact)
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        description: 'Command (tables:ensure, tables:list, telegram:set-webhook, telegram:set-commands, staff:add, staff:list, price:set, menu:list, check, qr)'
+        required: true
+      args:
+        description: 'Arguments, separated by spaces (optional)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      ADMIN_URL: https://orders.224livehouse.com
+      ADMIN_TOKEN: ${{ secrets.INTERNAL_API_TOKEN }}
+      COMMAND: ${{ inputs.command }}
+      ARGS: ${{ inputs.args }}
+    steps:
+      - name: Run
+        shell: bash
+        run: |
+          test -n "$ADMIN_TOKEN" || { echo "Add the INTERNAL_API_TOKEN secret first (GitHub → Settings → Secrets and variables → Actions)."; exit 1; }
+          if [ "$COMMAND" = "qr" ]; then
+            code=$(curl -s -o table-qr-codes.pdf -w '%{http_code}' -H "authorization: Bearer $ADMIN_TOKEN" "$ADMIN_URL/api/internal/qr-sheet.pdf")
+            [ "$code" = "200" ] || { echo "QR sheet failed (HTTP $code). Run tables:ensure 7 first."; cat table-qr-codes.pdf; exit 1; }
+            echo "QR sheet saved: download it from the 'Artifacts' section of this run."
+            exit 0
+          fi
+          body=$(jq -n --arg c "$COMMAND" --arg a "$ARGS" '{command: $c, args: ($a | split(" ") | map(select(length > 0)))}')
+          res=$(curl -s -w '\n%{http_code}' -X POST -H "authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' -d "$body" "$ADMIN_URL/api/internal/admin")
+          code=$(echo "$res" | tail -1); json=$(echo "$res" | sed '$d')
+          echo "$json" | jq -r '.output[]?, (.error // empty | "Error: " + .)'
+          [ "$code" = "200" ] || exit 1
+      - uses: actions/upload-artifact@v4
+        if: ${{ inputs.command == 'qr' }}
+        with:
+          name: table-qr-codes
+          path: table-qr-codes.pdf
