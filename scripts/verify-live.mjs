@@ -5,6 +5,7 @@ const url = deployedUrl();
 async function request(path, init) {
   const response = await fetch(url + path, {
     ...init,
+    redirect: "manual",
     signal: AbortSignal.timeout(20000),
   });
   return response;
@@ -27,6 +28,9 @@ assert.ok((await menu.json()).categories.length > 0);
 const homepage = await request("/");
 assert.equal(homepage.status, 200);
 assert.match(await homepage.text(), /224 Live House/);
+const qrShell = await request("/t/LiveVerificationQrShell");
+assert.equal(qrShell.status, 200);
+assert.match(await qrShell.text(), /224 Live House/);
 for (const asset of [
   "/static/app.js",
   "/static/styles.css",
@@ -54,7 +58,7 @@ writeFileSync(
       checks: [
         "D1 health",
         "menu",
-        "HTML",
+        "HTML and QR shell without redirects",
         "JS/CSS/image assets",
         "internal authentication",
         "webhook authentication",
