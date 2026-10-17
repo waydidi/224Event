@@ -96,7 +96,7 @@ export function createHttpServer(ctx: Ctx, tg: TelegramClient) {
     totalSatang: o.total_satang,
     createdAt: o.created_at,
     servedAt: o.served_at,
-    items: o.items.map((i) => ({ name: i.item_name_snapshot, quantity: i.quantity, unitPriceSatang: i.unit_price_satang, lineTotalSatang: i.line_total_satang })),
+    items: o.items.map((i) => ({ name: i.item_name_snapshot, quantity: i.quantity, unitPriceSatang: i.unit_price_satang, lineTotalSatang: i.line_total_satang, note: i.note })),
   });
 
   const sessionView = (auth: CustomerAuth) => ({

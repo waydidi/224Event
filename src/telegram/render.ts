@@ -15,6 +15,22 @@ export interface Card {
 
 const WIDTH = 30;
 
+/** A drink's note under its line in the monospace block: "  ↳ less ice", wrapped to the card width. */
+export function noteLines(note: string, width = WIDTH): string[] {
+  if (!note) return [];
+  const room = width - 4;
+  const out: string[] = [];
+  let cur = '';
+  for (const word of note.split(' ')) {
+    for (let w = word; w.length > 0; w = w.slice(room)) {
+      const piece = w.slice(0, room);
+      if (cur && (cur + ' ' + piece).length > room) { out.push(cur); cur = piece; } else cur = cur ? `${cur} ${piece}` : piece;
+    }
+  }
+  if (cur) out.push(cur);
+  return out.map((l, i) => (i === 0 ? '  ↳ ' : '    ') + l);
+}
+
 /** "2 × Lost Cherry      ฿560" padded for a monospace <pre> block. */
 export function row(left: string, right: string, width = WIDTH): string[] {
   const room = width - right.length - 1;
@@ -45,7 +61,7 @@ export function renderOrderCard(db: Database, config: Config, orderId: number): 
   const items = orderItems(db, order.id);
   const tz = config.displayTimeZone;
   const body = [
-    ...items.flatMap((i) => row(`${i.quantity} × ${i.item_name_snapshot}`, formatBaht(i.line_total_satang))),
+    ...items.flatMap((i) => [...row(`${i.quantity} × ${i.item_name_snapshot}`, formatBaht(i.line_total_satang)), ...noteLines(i.note)]),
     '-'.repeat(WIDTH),
     ...row('ORDER TOTAL', formatBaht(order.total_satang)),
   ];

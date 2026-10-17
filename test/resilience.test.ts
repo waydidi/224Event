@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { afterEach, describe, test } from 'node:test';
 import { applyBps, formatAmount, formatBaht, parseBaht } from '../src/lib/money.ts';
 import { row } from '../src/telegram/render.ts';
-import { auth, command, http, join, openTable, order, setup, tap, USERS, type TestEnv } from './helpers.ts';
+import { auth, command, http, join, menuId, openTable, order, setup, tap, USERS, type TestEnv } from './helpers.ts';
 
 let env: TestEnv | undefined;
 afterEach(async () => {
@@ -140,6 +140,46 @@ describe('reliability & security', () => {
     assert.equal((await order(env, token, [['negroni', 1]])).status, 410);
     const a = env.app.ctx.db.get<any>("SELECT * FROM audit_events WHERE action = 'session.void'")!;
     assert.match(a.metadata, /walk-out/);
+  });
+
+  test('per-drink notes: stored on the line, shown to staff under that drink, same drink + different note stays separate', async () => {
+    const e = (env = await setup());
+    const s = await openTable(e, 1);
+    const token = await join(e, 1, s.join_pin);
+    const mojito = await menuId(e, 'mojito');
+    const body = {
+      items: [
+        { menuItemId: mojito, quantity: 1, note: '  less   ice\u0007 ' },
+        { menuItemId: mojito, quantity: 2, note: 'less ice' },        // merges with the line above (same note after cleaning)
+        { menuItemId: mojito, quantity: 1 },                          // no note -> its own line
+        { menuItemId: await menuId(e, 'negroni'), quantity: 1, note: 'no orange peel, allergic to citrus oils' },
+      ],
+      idempotencyKey: 'note-order-0001',
+    };
+    const r = await http(e, 'POST', '/api/public/orders', body, auth(token));
+    assert.equal(r.status, 201);
+    assert.deepEqual(
+      r.data.order.items.map((i: any) => [i.name, i.quantity, i.note]),
+      [['Negroni', 1, 'no orange peel, allergic to citrus oils'], ['Mojito', 1, ''], ['Mojito', 3, 'less ice']], // menu order, then note
+    );
+    assert.equal(r.data.order.totalSatang, 5 * 22000);
+    await e.drain();
+    const card = e.tg.sent((t) => t.includes('NEW COCKTAIL ORDER'))[0].params.text as string;
+    assert.match(card, /3 × Mojito\s+฿660\n  ↳ less ice\n/);
+    assert.match(card, /1 × Negroni\s+฿220\n  ↳ no orange peel, allergic\n    to citrus oils\n/); // wrapped to the card width
+    // Guests see the notes in their order history too, and the bill still totals correctly.
+    const orders = await http(e, 'GET', '/api/public/session/orders', undefined, auth(token));
+    assert.equal(orders.data.orders[0].items[2].note, 'less ice');
+    const bill = await http(e, 'GET', '/api/public/session/bill', undefined, auth(token));
+    assert.equal(bill.data.bill.totalSatang, 5 * 22000);
+    // Same key with a different note is a different request.
+    const changed = { ...body, items: body.items.map((i, n) => (n === 0 ? { ...i, note: 'extra ice' } : i)) };
+    assert.equal((await http(e, 'POST', '/api/public/orders', changed, auth(token))).data.error.code, 'IDEMPOTENCY_MISMATCH');
+    // Validation.
+    const bad = async (note: unknown) => (await http(e, 'POST', '/api/public/orders', { items: [{ menuItemId: mojito, quantity: 1, note }], idempotencyKey: `bad-note-${Math.random().toString(36).slice(2, 10)}` }, auth(token)));
+    assert.equal((await bad('x'.repeat(101))).data.error.code, 'NOTES_TOO_LONG');
+    assert.equal((await bad(42)).data.error.code, 'INVALID_NOTES');
+    assert.equal((await bad('x'.repeat(100))).status, 201);
   });
 
   test('sold out items cannot be ordered; staff toggle via Telegram', async () => {

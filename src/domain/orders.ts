@@ -9,7 +9,7 @@ import { audit, type Actor } from './audit.ts';
 import { menuReadiness, type MenuItemRow } from './menu.ts';
 import { getSession, getTableById } from './tables.ts';
 
-export const LIMITS = { maxLines: 18, maxQtyPerLine: 20, maxQtyPerOrder: 40, maxNoteLength: 200 };
+export const LIMITS = { maxLines: 18, maxQtyPerLine: 20, maxQtyPerOrder: 40, maxNoteLength: 200, maxItemNoteLength: 100 };
 
 export interface OrderRow {
   id: number;
@@ -32,22 +32,25 @@ export interface OrderItemRow {
   unit_price_satang: number;
   quantity: number;
   line_total_satang: number;
+  /** Guest's note to staff for this drink, '' when none. */
+  note: string;
 }
 
 export interface PlaceOrderInput {
-  items: { menuItemId: number; quantity: number }[];
+  items: { menuItemId: number; quantity: number; note?: string }[];
   notes?: string | null;
   idempotencyKey: string;
   /** Total the customer saw; if prices changed in the meantime, the order is rejected for re-review. */
   expectedTotalSatang?: number;
 }
 
-function normalize(input: unknown): { items: { menuItemId: number; quantity: number }[]; notes: string | null; idempotencyKey: string; expectedTotalSatang?: number } {
+function normalize(input: unknown): { items: { menuItemId: number; quantity: number; note: string }[]; notes: string | null; idempotencyKey: string; expectedTotalSatang?: number } {
   const body = (input ?? {}) as Record<string, unknown>;
   const key = body.idempotencyKey;
   if (typeof key !== 'string' || !/^[A-Za-z0-9_-]{8,64}$/.test(key)) throw badRequest('INVALID_IDEMPOTENCY_KEY', 'Missing or invalid idempotency key');
   if (!Array.isArray(body.items) || body.items.length === 0) throw badRequest('EMPTY_ORDER', 'Your order is empty');
-  const merged = new Map<number, number>();
+  // Same drink + same note merge into one line; the same drink with a different note stays a separate line.
+  const merged = new Map<string, { menuItemId: number; quantity: number; note: string }>();
   for (const raw of body.items as unknown[]) {
     const it = (raw ?? {}) as Record<string, unknown>;
     const id = it.menuItemId;
@@ -56,10 +59,18 @@ function normalize(input: unknown): { items: { menuItemId: number; quantity: num
     if (!Number.isSafeInteger(qty) || (qty as number) < 1 || (qty as number) > LIMITS.maxQtyPerLine) {
       throw badRequest('INVALID_QUANTITY', `Quantity must be between 1 and ${LIMITS.maxQtyPerLine}`);
     }
-    merged.set(id as number, (merged.get(id as number) ?? 0) + (qty as number));
+    let note = '';
+    if (it.note !== undefined && it.note !== null) {
+      if (typeof it.note !== 'string') throw badRequest('INVALID_NOTES', 'Invalid note');
+      note = it.note.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim();
+      if (note.length > LIMITS.maxItemNoteLength) throw badRequest('NOTES_TOO_LONG', `A drink note must be at most ${LIMITS.maxItemNoteLength} characters`);
+    }
+    const mergeKey = `${id}\u0000${note}`;
+    const prev = merged.get(mergeKey);
+    merged.set(mergeKey, { menuItemId: id as number, note, quantity: (prev?.quantity ?? 0) + (qty as number) });
   }
   if (merged.size > LIMITS.maxLines) throw badRequest('TOO_MANY_ITEMS', 'Too many different items in one order');
-  const items = [...merged].map(([menuItemId, quantity]) => ({ menuItemId, quantity })).sort((a, b) => a.menuItemId - b.menuItemId);
+  const items = [...merged.values()].sort((a, b) => a.menuItemId - b.menuItemId || a.note.localeCompare(b.note));
   const totalQty = items.reduce((s, i) => s + i.quantity, 0);
   if (items.some((i) => i.quantity > LIMITS.maxQtyPerLine) || totalQty > LIMITS.maxQtyPerOrder) {
     throw badRequest('TOO_MANY_DRINKS', `Please order at most ${LIMITS.maxQtyPerOrder} drinks at a time (max ${LIMITS.maxQtyPerLine} of one kind)`);
@@ -106,12 +117,12 @@ export function placeOrder(ctx: Ctx, auth: CustomerAuth, rawInput: unknown): { o
     if (!readiness.ready) throw conflict('MENU_NOT_READY', 'Ordering is not open yet. Please ask staff.');
 
     const lines: Omit<OrderItemRow, 'id' | 'order_id'>[] = [];
-    for (const { menuItemId, quantity } of input.items) {
+    for (const { menuItemId, quantity, note } of input.items) {
       const item = ctx.db.get<MenuItemRow>('SELECT * FROM menu_items WHERE id = ?', [menuItemId]);
       if (!item) throw badRequest('INVALID_ITEM', 'Invalid menu item');
       if (!item.available) throw conflict('ITEM_UNAVAILABLE', `${item.name} is currently unavailable`, { menuItemId });
       const unit = item.price_satang!;
-      lines.push({ menu_item_id: item.id, item_name_snapshot: item.name, unit_price_satang: unit, quantity, line_total_satang: unit * quantity });
+      lines.push({ menu_item_id: item.id, item_name_snapshot: item.name, unit_price_satang: unit, quantity, line_total_satang: unit * quantity, note });
     }
     const total = lines.reduce((s, l) => s + l.line_total_satang, 0);
     if (input.expectedTotalSatang !== undefined && input.expectedTotalSatang !== total) {
@@ -128,8 +139,8 @@ export function placeOrder(ctx: Ctx, auth: CustomerAuth, rawInput: unknown): { o
     const orderId = Number(res.lastInsertRowid);
     for (const l of lines) {
       ctx.db.run(
-        'INSERT INTO order_items(order_id, menu_item_id, item_name_snapshot, unit_price_satang, quantity, line_total_satang) VALUES (?, ?, ?, ?, ?, ?)',
-        [orderId, l.menu_item_id, l.item_name_snapshot, l.unit_price_satang, l.quantity, l.line_total_satang],
+        'INSERT INTO order_items(order_id, menu_item_id, item_name_snapshot, unit_price_satang, quantity, line_total_satang, note) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [orderId, l.menu_item_id, l.item_name_snapshot, l.unit_price_satang, l.quantity, l.line_total_satang, l.note],
       );
     }
     const actionId = createAction(ctx, 'order.serve', 'order', orderId);

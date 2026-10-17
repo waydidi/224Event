@@ -65,7 +65,7 @@ npm run typecheck
 |---|---|---|
 | Seat a group | cashier/lead | `/open_table 1`. The bot posts **TABLE 1 OPENED · TABLE1-N · Join PIN 123456**. Tell the guests the PIN in person. |
 | Guest lost the PIN, or someone outside the group got it | cashier/lead | `/pin 1` or the **🔁 New PIN** button. Guests who already joined stay joined. Too many wrong PIN attempts also lock joining until a new PIN is issued. |
-| New order arrives | everyone | A card appears with **✅ Mark as Served**. Tap it once the drinks reach the table. |
+| New order arrives | everyone | A card appears with **✅ Mark as Served**. Tap it once the drinks reach the table. A note the guest wrote for a drink ("less ice") is shown right under that drink; a note for the whole order appears as "Note:". |
 | Guests tap *Confirm & Request Payment* | everyone | A **🧾 PAYMENT REQUESTED** card appears with the itemised bill and the total to collect. New orders are paused. |
 | Money collected (cash or manual PromptPay) | cashier/lead | Tap **✅ Confirm Paid · Cash** or **· PromptPay**. **Only after you have actually checked the money.** The card changes to PAID, the PDF receipt is posted, and the table is freed. |
 | Guests want more drinks after requesting the bill | cashier/lead | **↩️ Reopen bill**, or `/reopen_bill 1`. The frozen bill is cancelled (and audited). The guests' next payment request creates a fresh bill. |

@@ -32,6 +32,7 @@
     lastVisit: null,
     detailId: null,
     detailQty: 1,
+    detailNote: '',
     detailPushed: false,
     errorText: '',
   };
@@ -113,16 +114,21 @@
   }
 
   // ---------- cart ----------
+  // A cart line is one drink with an optional note to staff. The same drink with a
+  // different note is a separate line, so each note stays attached to its drink.
   const cartKey = () => (state.status ? `224:cart:${state.status.session.code}` : '');
+  const lineKey = (id, note) => `${id}\u0000${note}`;
+  const cleanNote = (v) => String(v || '').replace(/\s+/g, ' ').trim();
   function saveCart() {
-    try { sessionStorage.setItem(cartKey(), JSON.stringify({ items: [...state.cart], notes: state.notes })); } catch { /* ignore */ }
+    try { sessionStorage.setItem(cartKey(), JSON.stringify({ lines: [...state.cart.values()], notes: state.notes })); } catch { /* ignore */ }
   }
   function loadCart() {
     try {
       const raw = sessionStorage.getItem(cartKey());
       if (!raw) return;
       const c = JSON.parse(raw);
-      state.cart = new Map(c.items || []);
+      const lines = c.lines || (c.items || []).map(([id, qty]) => ({ id, note: '', qty })); // carts saved by older versions
+      state.cart = new Map(lines.filter((l) => l && l.qty > 0).map((l) => [lineKey(l.id, l.note || ''), { id: l.id, note: l.note || '', qty: l.qty }]));
       state.notes = c.notes || '';
     } catch { /* ignore */ }
   }
@@ -135,16 +141,42 @@
   const allItems = () => (state.menu ? state.menu.categories.flatMap((c) => c.items) : []);
   const itemById = (id) => allItems().find((i) => i.id === id);
   function cartLines() {
-    return [...state.cart].map(([id, qty]) => ({ item: itemById(id), qty })).filter((l) => l.item && l.qty > 0);
+    return [...state.cart.values()].map((l) => ({ item: itemById(l.id), note: l.note, qty: l.qty })).filter((l) => l.item && l.qty > 0);
   }
-  const cartCount = () => cartLines().reduce((s, l) => s + l.qty, 0);
-  const cartTotal = () => cartLines().reduce((s, l) => s + (l.item.priceSatang || 0) * l.qty, 0);
-  function setQty(id, qty) {
-    const next = Math.max(0, Math.min(20, qty));
-    if (next === 0) state.cart.delete(id); else state.cart.set(id, next);
+  const itemQty = (id) => [...state.cart.values()].filter((l) => l.id === id).reduce((n, l) => n + l.qty, 0);
+  const cartCount = () => cartLines().reduce((n, l) => n + l.qty, 0);
+  const cartTotal = () => cartLines().reduce((n, l) => n + (l.item.priceSatang || 0) * l.qty, 0);
+  function cartChanged() {
     state.pending = null; // cart changed: a new submission gets a new idempotency key
     saveCart();
     render();
+  }
+  /** Menu-card stepper. "+" adds to the plain (no-note) line; "−" removes from it first, then from the newest noted line. */
+  function adjustItem(id, delta) {
+    const plain = lineKey(id, '');
+    if (delta > 0) {
+      if (itemQty(id) >= 20) return;
+      const l = state.cart.get(plain) || { id, note: '', qty: 0 };
+      l.qty += 1;
+      state.cart.set(plain, l);
+    } else {
+      const mine = [...state.cart.entries()].filter(([, l]) => l.id === id);
+      if (!mine.length) return;
+      const [key, l] = state.cart.has(plain) ? [plain, state.cart.get(plain)] : mine[mine.length - 1];
+      l.qty -= 1;
+      if (l.qty <= 0) state.cart.delete(key);
+    }
+    cartChanged();
+  }
+  /** Detail page "Add to Cart": merges with an existing line that has the same note. Max 20 of one drink. */
+  function addWithNote(id, note, qty) {
+    const add = Math.min(qty, 20 - itemQty(id));
+    if (add <= 0) return;
+    const key = lineKey(id, note);
+    const l = state.cart.get(key) || { id, note, qty: 0 };
+    l.qty += add;
+    state.cart.set(key, l);
+    cartChanged();
   }
 
   // ---------- data flow ----------
@@ -269,7 +301,7 @@
   async function placeOrder() {
     const lines = cartLines();
     if (!lines.length || state.busy) return;
-    const payload = { items: lines.map((l) => ({ menuItemId: l.item.id, quantity: l.qty })), notes: state.notes.trim() || null };
+    const payload = { items: lines.map((l) => ({ menuItemId: l.item.id, quantity: l.qty, ...(l.note ? { note: l.note } : {}) })), notes: state.notes.trim() || null };
     const hash = JSON.stringify(payload);
     if (!state.pending || state.pending.hash !== hash) state.pending = { key: uuid(), hash };
     state.busy = true; state.flash = null; render();
@@ -285,7 +317,7 @@
       if (e.code === 'PRICE_CHANGED' || e.code === 'ITEM_UNAVAILABLE') {
         state.pending = null;
         state.menu = await api('/api/public/menu', { auth: false }).catch(() => state.menu);
-        if (e.code === 'ITEM_UNAVAILABLE' && e.details) state.cart.delete(e.details.menuItemId);
+        if (e.code === 'ITEM_UNAVAILABLE' && e.details) for (const [k, l] of [...state.cart]) if (l.id === e.details.menuItemId) state.cart.delete(k);
         saveCart();
       }
       state.flash = { kind: 'error', text: e.code === 'NETWORK' ? 'Could not reach the bar. Tap Place Order again — you will not be charged twice.' : e.message };
@@ -390,11 +422,11 @@
   }
 
   function itemCard(item, enabled) {
-    const qty = state.cart.get(item.id) || 0;
+    const qty = itemQty(item.id);
     const orderable = enabled && item.available && item.priceSatang;
     const thumbSrc = item.thumbUrl || item.imageUrl;
     const thumb = thumbSrc
-      ? h('img', { class: 'thumb', src: thumbSrc, alt: '', loading: 'lazy', width: 76, height: 76 })
+      ? h('img', { class: 'thumb photo', src: thumbSrc, alt: '', loading: 'lazy', width: 76, height: 114 })
       : h('div', { class: 'thumb', 'aria-hidden': 'true' }, '🍸');
     return h('article', { class: `item${item.available ? '' : ' unavailable'}`, 'aria-label': item.name,
       onclick: (e) => { if (!e.target.closest('.qty')) openDetail(item.id); } },
@@ -405,9 +437,9 @@
         h('div', { class: 'item-foot' },
           item.available ? h('span', { class: 'price' }, item.priceSatang ? baht(item.priceSatang) : 'Price TBA') : h('span', { class: 'tag' }, 'Unavailable'),
           h('div', { class: 'qty', role: 'group', 'aria-label': `Quantity of ${item.name}` },
-            h('button', { type: 'button', 'aria-label': `Remove one ${item.name}`, disabled: qty === 0, onclick: () => setQty(item.id, qty - 1) }, '−'),
+            h('button', { type: 'button', 'aria-label': `Remove one ${item.name}`, disabled: qty === 0, onclick: () => adjustItem(item.id, -1) }, '−'),
             h('output', { 'aria-live': 'polite' }, qty),
-            h('button', { type: 'button', class: 'plus', 'aria-label': `Add one ${item.name}`, disabled: !orderable || qty >= 20, onclick: () => setQty(item.id, qty + 1) }, '+')))));
+            h('button', { type: 'button', class: 'plus', 'aria-label': `Add one ${item.name}`, disabled: !orderable || qty >= 20, onclick: () => adjustItem(item.id, 1) }, '+')))));
   }
 
   // ---------- product detail ----------
@@ -424,39 +456,10 @@
     }
     return el;
   }
-  const ICONS = {
-    spirit: [['path', { d: 'M10 2.5h4v4l1.6 2.6V20.5a1 1 0 0 1-1 1H9.4a1 1 0 0 1-1-1V9.1L10 6.5z' }], ['path', { d: 'M8.4 12.5h7.2' }]],
-    citrus: [['circle', { cx: 12, cy: 12, r: 8.5 }], ['path', { d: 'M12 5.5v13M5.5 12h13M7.4 7.4l9.2 9.2M16.6 7.4l-9.2 9.2' }]],
-    sweet: [['path', { d: 'M12 3.5l7.5 4.2v8.6L12 20.5l-7.5-4.2V7.7z' }], ['path', { d: 'M12 12l7.5-4.3M12 12v8.5M12 12L4.5 7.7' }]],
-    coffee: [['path', { d: 'M12 3c4.4 0 7 3.7 7 9s-2.6 9-7 9-7-3.7-7-9 2.6-9 7-9z' }], ['path', { d: 'M12 3c-2.2 3-2.2 6 0 9s2.2 6 0 9' }]],
-    egg: [['path', { d: 'M12 3c3.6 0 6.5 5.6 6.5 10.2a6.5 6.5 0 0 1-13 0C5.5 8.6 8.4 3 12 3z' }]],
-    herb: [['path', { d: 'M5 19C5 10.5 10.5 5 19.5 4.5 19 13.5 13.5 19 5 19z' }], ['path', { d: 'M5 19l8.5-8.5' }]],
-    fruit: [['circle', { cx: 8, cy: 16, r: 3.6 }], ['circle', { cx: 16.5, cy: 17, r: 3.2 }], ['path', { d: 'M8 12.4C9 8 12 4.8 17 3.5M16.5 13.8C16 9.5 16.4 6.4 17 3.5' }]],
-    soda: [['circle', { cx: 8.5, cy: 15.5, r: 3.5 }], ['circle', { cx: 15.5, cy: 9.5, r: 2.6 }], ['circle', { cx: 15, cy: 18, r: 1.6 }], ['circle', { cx: 9, cy: 6, r: 1.6 }]],
-    salt: [['path', { d: 'M8 9.5h8l-1.2 11.5H9.2z' }], ['path', { d: 'M9 9.5V7a3 3 0 0 1 6 0v2.5' }], ['path', { d: 'M11 5.6h.01M13 5.6h.01' }]],
-    flower: [['circle', { cx: 12, cy: 12, r: 2.2 }], ['path', { d: 'M12 9.8V4M12 14.2V20M9.8 12H4M14.2 12H20M10.4 10.4L6.3 6.3M13.6 13.6l4.1 4.1M13.6 10.4l4.1-4.1M10.4 13.6l-4.1 4.1' }]],
-    drop: [['path', { d: 'M12 3.5s6 6.4 6 10.8a6 6 0 0 1-12 0c0-4.4 6-10.8 6-10.8z' }]],
-  };
-  function ingredientIcon(name) {
-    const n = name.toLowerCase();
-    const kind =
-      /egg/.test(n) ? 'egg'
-      : /chrysanthemum|elderflower|jasmine|lavender|hibiscus/.test(n) ? 'flower'
-      : /espresso|coffee/.test(n) ? 'coffee'
-      : /lime|lemon|orange|citron|citrus|grapefruit|yuzu/.test(n) && !/vodka/.test(n) ? 'citrus'
-      : /gin|vodka|rum|tequila|mezcal|whisk|bourbon|rye|campari|vermouth|liqueur|amaretto|cointreau|triple sec|cognac|brandy|aperol/.test(n) ? 'spirit'
-      : /sugar|syrup|honey|cola|grenadine/.test(n) ? 'sweet'
-      : /mint|basil|leaf|olive|herb|thyme|rosemary/.test(n) ? 'herb'
-      : /cherry|cranberry|mango|berry|peach|passion|pineapple|coconut|rice/.test(n) ? 'fruit'
-      : /soda|tonic|ginger beer|sparkling/.test(n) ? 'soda'
-      : /salt/.test(n) ? 'salt'
-      : 'drop';
-    return svg(ICONS[kind], 'ing-icon');
-  }
-
   function openDetail(id) {
     state.detailId = id;
     state.detailQty = 1;
+    state.detailNote = '';
     try { history.pushState({ detail: id }, ''); state.detailPushed = true; } catch { state.detailPushed = false; }
     render();
     (document.querySelector('.phone-scroll') || document.scrollingElement).scrollTop = 0;
@@ -472,11 +475,14 @@
   function viewDetail(item) {
     const enabled = state.status.orderingEnabled && state.menu.orderingEnabled;
     const orderable = enabled && item.available && item.priceSatang;
-    const inCart = state.cart.get(item.id) || 0;
+    const inCart = itemQty(item.id);
     const maxAdd = Math.max(0, 20 - inCart);
     const qty = Math.min(state.detailQty, Math.max(1, maxAdd));
     const signature = state.menu.categories.find((c) => c.items.includes(item))?.code === 'signature';
     const ingredients = item.ingredients || [];
+    const noteField = h('textarea', { id: 'detail-note', maxlength: 100, rows: 2, placeholder: 'e.g. less ice, no honey', 'aria-describedby': 'detail-note-help',
+      oninput: (e) => { state.detailNote = e.target.value; } });
+    noteField.value = state.detailNote;
     const label = !item.available ? 'Unavailable'
       : !enabled ? (state.status.session.status === 'PAYMENT_REQUESTED' ? 'Orders paused' : 'Ordering opens soon')
       : maxAdd === 0 ? 'Limit reached'
@@ -484,7 +490,7 @@
     return [h('div', { class: 'detail' },
       h('div', { class: 'detail-hero' },
         item.imageUrl
-          ? h('img', { src: item.imageUrl, alt: item.name })
+          ? [h('img', { class: 'hero-bg', src: item.imageUrl, alt: '', 'aria-hidden': 'true' }), h('img', { class: 'hero-img', src: item.imageUrl, alt: item.name })]
           : svg([['path', { d: 'M4 4h16l-8 9z' }], ['path', { d: 'M12 13v7M8 20.5h8' }], ['circle', { cx: 17.5, cy: 5.5, r: 1.6 }]], 'hero-glass'),
         h('button', { type: 'button', class: 'detail-back', 'aria-label': 'Back to menu', onclick: () => closeDetail(false) },
           svg([['path', { d: 'M19 12H5M11 6l-6 6 6 6' }]]))),
@@ -496,16 +502,19 @@
         h('div', { class: 'detail-price' }, item.priceSatang ? baht(item.priceSatang) : 'Price TBA'),
         h('h3', { class: 'detail-label' }, 'Ingredients'),
         ingredients.length
-          ? h('ul', { class: 'ing-list' }, ingredients.map((n) => h('li', { class: 'ing' }, h('span', { class: 'ing-badge' }, ingredientIcon(n)), n)))
+          ? h('ul', { class: 'ing-list' }, ingredients.map((n) => h('li', { class: 'ing' }, n)))
           : h('p', { class: 'muted small' }, 'Ask our bartenders what goes into this one.'),
-        h('p', { class: 'small muted detail-note' }, 'Allergies or preferences? Add a note in your cart or tell our staff.')),
+        h('div', { class: 'detail-notes' },
+          h('label', { for: 'detail-note' }, 'Note to staff'),
+          noteField,
+          h('p', { id: 'detail-note-help', class: 'small muted' }, 'Allergies or preferences for this drink (optional).'))),
       h('div', { class: 'cta-bar' }, h('div', { class: 'detail-cta' },
         h('div', { class: 'qty', role: 'group', 'aria-label': `Quantity of ${item.name}` },
           h('button', { type: 'button', 'aria-label': 'One less', disabled: !orderable || qty <= 1, onclick: () => { state.detailQty = qty - 1; render(); } }, '−'),
           h('output', { 'aria-live': 'polite' }, qty),
           h('button', { type: 'button', class: 'plus', 'aria-label': 'One more', disabled: !orderable || qty >= maxAdd, onclick: () => { state.detailQty = qty + 1; render(); } }, '+')),
         h('button', { type: 'button', class: 'btn', disabled: !orderable || maxAdd === 0, onclick: () => {
-          setQty(item.id, inCart + qty);
+          addWithNote(item.id, cleanNote(state.detailNote), qty);
           announce(`Added ${qty} ${item.name} to cart`);
           closeDetail(false);
         } }, label || `Add to Cart (${baht(item.priceSatang * qty)})`))))];
@@ -538,11 +547,12 @@
     return [
       h('div', { class: 'section' }, h('h2', {}, 'Your order'), flash(),
         h('div', { class: 'card' },
-          lines.length ? lines.map((l) => h('div', { class: 'line' },
+          lines.length ? lines.map((l) => [h('div', { class: 'line' },
             h('span', {}, h('span', { class: 'q' }, `${l.qty} ×`), l.item.name, h('span', { class: 'small muted' }, ` @ ${baht(l.item.priceSatang)}`)),
-            h('span', {}, baht(l.item.priceSatang * l.qty)))) : h('p', { class: 'muted' }, 'Your cart is empty.'),
+            h('span', {}, baht(l.item.priceSatang * l.qty))),
+            l.note ? h('div', { class: 'line-note' }, `Note: ${l.note}`) : null]) : h('p', { class: 'muted' }, 'Your cart is empty.'),
           h('div', { class: 'line total' }, h('span', {}, 'Total'), h('span', {}, baht(cartTotal())))),
-        h('label', { for: 'notes' }, 'Special instructions (optional)'), notes,
+        h('label', { for: 'notes' }, 'Note to staff for the whole order (optional)'), notes,
         h('p', { class: 'small muted' }, 'Prices are final and shown in Thai Baht. You pay for the whole table at the end.')),
       h('div', { class: 'cta-bar' }, h('div', { class: 'btn-row' },
         h('button', { class: 'btn', type: 'button', disabled: !lines.length || state.busy || !state.status.orderingEnabled, onclick: placeOrder },
@@ -555,7 +565,8 @@
     return h('div', { class: 'card' },
       h('div', { class: 'card-head' }, h('strong', {}, `${o.orderNumber} · ${time(o.createdAt)}`),
         o.status === 'SERVED' ? h('span', { class: 'status served' }, '✓ Served') : h('span', { class: 'status new' }, h('span', { class: 'pulse', 'aria-hidden': 'true' }), 'Waiting to be served')),
-      o.items.map((i) => h('div', { class: 'line' }, h('span', {}, h('span', { class: 'q' }, `${i.quantity} ×`), i.name), h('span', {}, baht(i.lineTotalSatang)))),
+      o.items.map((i) => [h('div', { class: 'line' }, h('span', {}, h('span', { class: 'q' }, `${i.quantity} ×`), i.name), h('span', {}, baht(i.lineTotalSatang))),
+        i.note ? h('div', { class: 'line-note' }, `Note: ${i.note}`) : null]),
       h('div', { class: 'line sub' }, h('span', {}, 'Order total'), h('span', {}, baht(o.totalSatang))),
       o.notes ? h('div', { class: 'note' }, `Note: ${o.notes}`) : null);
   }
@@ -639,6 +650,7 @@
     const tabsScroll = document.querySelector('.tabs')?.scrollLeft ?? 0; // keep pill row position across re-renders
     $app.replaceChildren(...nodes.flat().filter(Boolean));
     $app.classList.toggle('is-waiting', state.view === 'waiting');
+    $app.classList.toggle('is-detail', !!$app.querySelector('.detail'));
     const tabs = document.querySelector('.tabs');
     if (tabs) {
       tabs.scrollLeft = tabsScroll;

@@ -323,6 +323,9 @@ UPDATE menu_items SET description = ${q(morningLightStory)}, ingredients = ${q(J
   WHERE code = 'the-morning-light';
 `;
 
+// Per-drink note to staff ("less ice"); orders keep their own whole-order note too.
+const itemNotes = `ALTER TABLE order_items ADD COLUMN note TEXT NOT NULL DEFAULT '';`;
+
 export const migrations: Migration[] = [
   { version: 1, name: 'schema', sql: schema },
   { version: 2, name: 'seed_menu', sql: seedMenu },
@@ -335,4 +338,5 @@ export const migrations: Migration[] = [
   },
   { version: 6, name: 'menu_photos', sql: menuPhotos },
   { version: 7, name: 'morning_light_details', sql: morningLightDetails },
+  { version: 8, name: 'order_item_notes', sql: itemNotes },
 ];
