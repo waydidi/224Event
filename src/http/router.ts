@@ -3,7 +3,7 @@ import { authenticate, joinSession, requireCurrent, type CustomerAuth } from '..
 import { currentBillView, requestPayment } from '../domain/billing.ts';
 import { getMenu, menuReadiness } from '../domain/menu.ts';
 import { placeOrder, sessionOrders } from '../domain/orders.ts';
-import { getActiveSession, getTableByQrToken } from '../domain/tables.ts';
+import { getActiveSession, getTableByQrToken, notifyTableWaiting } from '../domain/tables.ts';
 import { AppError, badRequest, notFound } from '../lib/errors.ts';
 import { safeEqual } from '../lib/ids.ts';
 import { RateLimiter } from '../lib/ratelimit.ts';
@@ -155,6 +155,15 @@ export function createHandler(ctx: Ctx, tg: TelegramClient, files: StaticFiles) 
         session: session ? { code: session.session_code, status: session.status } : null,
       },
     };
+  });
+
+  // The waiting page calls this once when a guest opens a table that has no session yet.
+  add('POST', '/api/public/table/:qrToken/arrived', (req) => {
+    limit(`arrived:${req.ip}`, 10);
+    const table = getTableByQrToken(ctx.db, req.params.qrToken);
+    if (!table) throw notFound('TABLE_NOT_FOUND', 'This QR code is not recognised.');
+    limit(`arrived:table:${table.id}`, 6, 10 * 60_000);
+    return { json: notifyTableWaiting(ctx, table) };
   });
 
   add('GET', '/api/public/menu', (req) => {

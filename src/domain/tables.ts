@@ -185,3 +185,27 @@ export function voidSession(ctx: Ctx, tableNumber: number, actor: Actor & { type
   ctx.kick();
   return result;
 }
+
+const ARRIVAL_COOLDOWN_MS = 10 * 60_000;
+
+/**
+ * A guest scanned a table's QR code while no session is open: tell the staff group, with a one-tap
+ * "Open table" button. At most one notice per table per 10 minutes, however many guests scan or reload.
+ */
+export function notifyTableWaiting(ctx: Ctx, table: TableRow): { notified: boolean } {
+  if (getActiveSession(ctx.db, table)) return { notified: false };
+  const bucket = Math.floor(ctx.now().getTime() / ARRIVAL_COOLDOWN_MS);
+  const queued = ctx.db.tx(() => {
+    const before = ctx.db.get<{ c: number }>('SELECT COUNT(*) AS c FROM outbox_events WHERE dedupe_key = ?', [`table.waiting:${table.id}:${bucket}`])!.c;
+    if (before) return false;
+    const openAction = createAction(ctx, 'table.open', 'table', table.display_number, { tableNumber: table.display_number });
+    enqueue(ctx, 'telegram.text', {
+      kind: 'table_waiting',
+      text: `📲 <b>Table ${table.display_number}</b> scanned the QR code and is waiting for staff.\nTap to open the table and get the PIN for the guests.`,
+      buttons: [[{ text: `✅ Open table ${table.display_number}`, actionId: openAction }]],
+    }, `table.waiting:${table.id}:${bucket}`);
+    return true;
+  });
+  if (queued) ctx.kick();
+  return { notified: queued };
+}

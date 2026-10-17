@@ -167,6 +167,35 @@ describe('reliability & security', () => {
     assert.equal(Buffer.from(pdf.data).subarray(0, 5).toString(), '%PDF-');
   });
 
+  test('scanning a QR code at a closed table notifies the staff group, who can open it with one tap', async () => {
+    const e = (env = await setup());
+    const scan = () => http(e, 'POST', `/api/public/table/${e.qr(2)}/arrived`, {});
+    assert.equal((await http(env, 'POST', '/api/public/table/not-a-token/arrived', {})).status, 404);
+    assert.equal((await scan()).data.notified, true);
+    await env.drain();
+    const notices = env.tg.sent((t) => t.includes('Table 2') && t.includes('waiting for staff'));
+    assert.equal(notices.length, 1);
+    const button = notices[0].params.reply_markup.inline_keyboard[0][0];
+    assert.match(button.text, /Open table 2/);
+    // Reloads and other guests at the same table do not spam the group.
+    assert.equal((await scan()).data.notified, false);
+    await env.drain();
+    assert.equal(env.tg.sent((t) => t.includes('waiting for staff')).length, 1);
+    // A server (not cashier/lead) may not open tables; the cashier can.
+    await tap(env, USERS.server, button.callback_data);
+    assert.ok(env.tg.answers().some((a) => /Not authorized/.test(a)));
+    await tap(env, USERS.cashier, button.callback_data);
+    await env.drain();
+    assert.equal(env.tg.sent((t) => t.includes('TABLE 2 OPENED')).length, 1);
+    // Once the table is open, scanning is silent.
+    assert.equal((await scan()).data.notified, false);
+    // Next evening (cooldown over, table closed again): a new scan notifies again.
+    const sess = env.app.ctx.db.get<{ id: number }>("SELECT id FROM table_sessions WHERE status = 'OPEN'")!;
+    env.app.ctx.db.run("UPDATE table_sessions SET status = 'VOIDED' WHERE id = ?", [sess.id]);
+    env.advance(11 * 60_000);
+    assert.equal((await scan()).data.notified, true);
+  });
+
   test('PIN brute force locks the session until staff issues a new PIN', async () => {
     env = await setup({ env: { PIN_MAX_FAILED_ATTEMPTS: '3' } });
     const s = await openTable(env, 1);

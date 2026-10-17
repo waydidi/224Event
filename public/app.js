@@ -202,6 +202,8 @@
       state.errorText = e.status === 404 ? 'This QR code is not recognised. Please ask staff for help.' : e.message;
       return render();
     }
+    // Nobody has opened this table yet: let the staff group know a guest is waiting (once per page load; the server also rate-limits).
+    if (!state.table.session) api(`/api/public/table/${qrToken}/arrived`, { method: 'POST', body: {}, auth: false }).catch(() => {});
     state.token = storage.get(storeKey);
     try { state.lastVisit = JSON.parse(sessionStorage.getItem(lastKey) || 'null'); } catch { /* ignore */ }
     api('/api/public/menu', { auth: false }).then((menu) => { state.menu = menu; render(); }).catch(() => {});
