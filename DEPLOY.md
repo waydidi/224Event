@@ -14,7 +14,7 @@ fly auth signup                # or: fly auth login   (needs a card)
 fly launch --copy-config --no-deploy        # pick a unique app name when asked; keep region sin
 fly volumes create data --size 1 --region sin
 ```
-Edit `fly.toml`: set `PUBLIC_BASE_URL = "https://orders.224livehouse.com"` (or the bare domain).
+`fly.toml` already has `PUBLIC_BASE_URL = "https://orders.224livehouse.com"`.
 
 ## 3. Secrets (never put these in git)
 ```bash
