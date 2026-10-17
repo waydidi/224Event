@@ -219,6 +219,32 @@ describe('reliability & security', () => {
     assert.equal(e.tg.sent((t) => t.includes('TABLE 4 OPENED')).length, 0);
   });
 
+  test('a whole venue behind one Wi-Fi address can scan, join and poll at the same time', async () => {
+    const e = (env = await setup());
+    const pins = await Promise.all([1, 2, 3].map((n) => openTable(e, n)));
+    // 12 guests (4 per table) scan their table's QR, then join with that table's PIN, all at once from one IP.
+    const results = await Promise.all(
+      [1, 2, 3].flatMap((n, ti) => [0, 1, 2, 3].map(async () => {
+        const scan = await http(e, 'GET', `/api/public/table/${e.qr(n)}`);
+        const joined = await http(e, 'POST', '/api/public/session/join', { qrToken: e.qr(n), pin: pins[ti].join_pin });
+        return [scan.status, joined.status, joined.data.visitToken as string] as [number, number, string];
+      })),
+    );
+    assert.deepEqual(new Set(results.map((r) => r[0])), new Set([200]));
+    assert.deepEqual(new Set(results.map((r) => r[1])), new Set([200]));
+    assert.equal(new Set(results.map((r) => r[2])).size, 12); // every guest gets their own token
+    // Everyone's phone polls the status every 5 s: 12 guests × 12 polls in one minute, plus the menu and waiting-page checks.
+    const polls = await Promise.all(results.flatMap((r) => Array.from({ length: 12 }, () => http(e, 'GET', '/api/public/session/status', undefined, auth(r[2])))));
+    assert.deepEqual(new Set(polls.map((p) => p.status)), new Set([200]));
+    const scans = await Promise.all(Array.from({ length: 150 }, (_, i) => http(e, 'GET', `/api/public/table/${e.qr((i % 3) + 1)}`)));
+    assert.deepEqual(new Set(scans.map((p) => p.status)), new Set([200]));
+    const arrivals = await Promise.all(Array.from({ length: 30 }, (_, i) => http(e, 'POST', `/api/public/table/${e.qr((i % 3) + 1)}/arrived`, {})));
+    assert.deepEqual(new Set(arrivals.map((p) => p.status)), new Set([200]));
+    // Abuse is still limited per guest: one guest hammering the order endpoint is stopped.
+    const order = await Promise.all(Array.from({ length: 30 }, () => http(e, 'POST', '/api/public/orders', { items: [], idempotencyKey: 'x' }, auth(results[0][2]))));
+    assert.ok(order.some((p) => p.status === 429));
+  });
+
   test('PIN brute force locks the session until staff issues a new PIN', async () => {
     env = await setup({ env: { PIN_MAX_FAILED_ATTEMPTS: '3' } });
     const s = await openTable(env, 1);

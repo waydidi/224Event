@@ -85,7 +85,7 @@ export function createHandler(ctx: Ctx, tg: TelegramClient, files: StaticFiles) 
     return h?.startsWith('Bearer ') ? h.slice(7).trim() : undefined;
   };
   const customer = (req: Req, bucket: string, max: number): CustomerAuth => {
-    limit(`${bucket}:ip:${req.ip}`, max * 4);
+    limit(`${bucket}:ip:${req.ip}`, max * 12); // generous: a whole venue shares one Wi-Fi address; the per-guest limit below is the tight one
     const auth = authenticate(ctx, bearer(req));
     limit(`${bucket}:access:${auth.access.id}`, max);
     return auth;
@@ -143,7 +143,7 @@ export function createHandler(ctx: Ctx, tg: TelegramClient, files: StaticFiles) 
 
   // ---- Public customer API ------------------------------------------------
   add('GET', '/api/public/table/:qrToken', (req) => {
-    limit(`table:${req.ip}`, 60);
+    limit(`table:${req.ip}`, 1500); // waiting pages re-check every few seconds; a venue shares one address
     const table = getTableByQrToken(ctx.db, req.params.qrToken);
     if (!table) throw notFound('TABLE_NOT_FOUND', 'This QR code is not recognised.');
     const session = getActiveSession(ctx.db, table);
@@ -159,15 +159,14 @@ export function createHandler(ctx: Ctx, tg: TelegramClient, files: StaticFiles) 
 
   // The waiting page calls this once when a guest opens a table that has no session yet.
   add('POST', '/api/public/table/:qrToken/arrived', (req) => {
-    limit(`arrived:${req.ip}`, 10);
+    limit(`arrived:${req.ip}`, 300);
     const table = getTableByQrToken(ctx.db, req.params.qrToken);
     if (!table) throw notFound('TABLE_NOT_FOUND', 'This QR code is not recognised.');
-    limit(`arrived:table:${table.id}`, 6, 10 * 60_000);
     return { json: notifyTableWaiting(ctx, table) };
   });
 
   add('GET', '/api/public/menu', (req) => {
-    limit(`menu:${req.ip}`, 60);
+    limit(`menu:${req.ip}`, 600);
     const readiness = menuReadiness(ctx.db);
     return {
       json: {
@@ -185,7 +184,7 @@ export function createHandler(ctx: Ctx, tg: TelegramClient, files: StaticFiles) 
   });
 
   add('POST', '/api/public/session/join', (req) => {
-    limit(`join:${req.ip}`, 10);
+    limit(`join:${req.ip}`, 300); // guessing the PIN is stopped per session by the attempt lock, not by address
     const b = (req.body ?? {}) as Record<string, unknown>;
     if (typeof b.qrToken !== 'string' || typeof b.pin !== 'string') throw badRequest('INVALID_REQUEST', 'Please enter the PIN from staff.');
     return { json: joinSession(ctx, b.qrToken, b.pin.trim()) };
