@@ -1,0 +1,42 @@
+name: Verify Cloudflare connection (read-only)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Confirm credentials are configured
+        shell: bash
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "Missing CLOUDFLARE_API_TOKEN"; exit 1; }
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "Missing CLOUDFLARE_ACCOUNT_ID"; exit 1; }
+      - name: Verify D1 database via Cloudflare API (no writes)
+        shell: bash
+        run: |
+          set -euo pipefail
+          database_id="6e7236c4-b3ed-4d93-bc73-71f5e80a9b9d"
+          response=$(mktemp)
+          trap 'rm -f "$response"' EXIT
+          status=$(curl --silent --show-error --output "$response" --write-out "%{http_code}" \
+            --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            --header "Accept: application/json" \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database/${database_id}")
+          if [ "$status" != 200 ] || [ "$(jq -r '.success' "$response")" != "true" ]; then
+            echo "Cloudflare D1 verification failed (HTTP $status)."
+            jq -r '.errors[]? | "Cloudflare error \(.code): \(.message)"' "$response"
+            exit 1
+          fi
+          actual_id=$(jq -r '.result.uuid // empty' "$response")
+          if [ "$actual_id" != "$database_id" ]; then
+            echo "Database ID mismatch in Cloudflare response."
+            exit 1
+          fi
+          echo "Verified Cloudflare D1 database ID with read-only request."
