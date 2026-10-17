@@ -781,7 +781,6 @@
     return [h('div', { class: 'hero', role: 'status' },
       partyScene(),
       h('h2', {}, 'Cheers, have a good evening.'),
-      h('p', {}, 'A staff member will come to your table to collect payment.'),
       h('div', { class: 'amount' }, 'FREE!'), // celebration banner only: the bill below and the payment card keep the real total
     ),
     h('div', { class: 'section' }, flash(), h('h2', {}, bill.billNumber ? `Bill ${bill.billNumber}` : 'Bill'), billLines(bill),
