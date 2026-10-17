@@ -446,6 +446,10 @@ const espressoMartiniPhoto = `
 UPDATE menu_items SET image_url = '/static/menu/espresso-martini.webp', thumb_url = '/static/menu/espresso-martini-thumb.webp', full_url = '/static/menu/espresso-martini-full.webp' WHERE name = 'Espresso Martini';
 `;
 
+const whiskeySourPhoto = `
+UPDATE menu_items SET image_url = '/static/menu/whiskey-sour.webp', thumb_url = '/static/menu/whiskey-sour-thumb.webp', full_url = '/static/menu/whiskey-sour-full.webp' WHERE name = 'Whiskey Sour';
+`;
+
 export const migrations: Migration[] = [
   { version: 1, name: 'schema', sql: schema },
   { version: 2, name: 'seed_menu', sql: seedMenu },
@@ -475,4 +479,5 @@ export const migrations: Migration[] = [
   { version: 22, name: 'mango_sticky_rice_photo', sql: mangoPhoto },
   { version: 23, name: 'lost_cherry_photo', sql: lostCherryPhoto },
   { version: 24, name: 'espresso_martini_photo', sql: espressoMartiniPhoto },
+  { version: 25, name: 'whiskey_sour_photo', sql: whiskeySourPhoto },
 ];
