@@ -355,6 +355,10 @@ UPDATE menu_items SET full_url = '/static/menu/naoko-full.webp' WHERE code = 'na
 // The birthday category is named after Kenneth. (The internal code stays 'kens-birthday' so item codes and links keep working.)
 const kennethName = `UPDATE menu_categories SET name = 'Kenneth’s Birthday Special' WHERE code = 'kens-birthday';`;
 
+const basketCasePhoto = `
+UPDATE menu_items SET image_url = '/static/menu/the-basket-case.webp', thumb_url = '/static/menu/the-basket-case-thumb.webp', full_url = '/static/menu/the-basket-case-full.webp' WHERE name = 'The Basket Case';
+`;
+
 export const migrations: Migration[] = [
   { version: 1, name: 'schema', sql: schema },
   { version: 2, name: 'seed_menu', sql: seedMenu },
@@ -372,4 +376,5 @@ export const migrations: Migration[] = [
   { version: 10, name: 'naoko_details', sql: naokoDetails },
   { version: 11, name: 'full_size_photos', sql: fullPhotos },
   { version: 12, name: 'kenneth_birthday_name', sql: kennethName },
+  { version: 13, name: 'basket_case_photo', sql: basketCasePhoto },
 ];
