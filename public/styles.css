@@ -223,7 +223,7 @@ label[for="pin"] { text-align: center; }
 /* Waiting screen: centre the clock + heading in the space below the header. */
 .app.is-waiting { display: flex; flex-direction: column; padding-bottom: 0; }
 .app.is-detail { padding-bottom: 0; } /* the detail sheet reaches the bottom edge itself */
-.waiting-center { flex: 1; display: grid; place-items: center; padding-bottom: 72px; /* offsets the header so it reads as visually centred */ }
+.waiting-center { flex: 1; display: grid; place-items: center; } /* centred in the whole screen (there is no header on this page) */
 .waiting-center .hero { padding-top: 0; }
 
 /* ---- Floating bottom navigation: My Orders / Pay ------------------------- */

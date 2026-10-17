@@ -427,7 +427,8 @@
   }
 
   function viewWaiting() {
-    return [header(), lastVisitNote(), h('div', { class: 'waiting-center' }, h('div', { class: 'hero' },
+    // No header here: this first page is just the clock and the message, centred on the screen.
+    return [lastVisitNote(), h('div', { class: 'waiting-center' }, h('div', { class: 'hero' },
       clock3d(),
       h('h2', {}, 'Waiting for staff'),
       h('p', { class: 'small muted' }, h('span', { class: 'pulse', 'aria-hidden': 'true' }), ' Checking…')))];
