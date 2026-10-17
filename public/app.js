@@ -142,7 +142,7 @@
   const allItems = () => (state.menu ? state.menu.categories.flatMap((c) => c.items) : []);
   const itemById = (id) => allItems().find((i) => i.id === id);
   function cartLines() {
-    return [...state.cart.values()].map((l) => ({ item: itemById(l.id), note: l.note, qty: l.qty })).filter((l) => l.item && l.qty > 0);
+    return [...state.cart.values()].map((l) => ({ key: lineKey(l.id, l.note), item: itemById(l.id), note: l.note, qty: l.qty })).filter((l) => l.item && l.qty > 0);
   }
   const itemQty = (id) => [...state.cart.values()].filter((l) => l.id === id).reduce((n, l) => n + l.qty, 0);
   const cartCount = () => cartLines().reduce((n, l) => n + l.qty, 0);
@@ -167,6 +167,15 @@
       l.qty -= 1;
       if (l.qty <= 0) state.cart.delete(key);
     }
+    cartChanged();
+  }
+  /** Cart-row stepper: changes exactly that line; "−" on the last one removes it. Max 20 of one drink. */
+  function adjustLine(key, delta) {
+    const l = state.cart.get(key);
+    if (!l) return;
+    if (delta > 0 && itemQty(l.id) >= 20) return;
+    l.qty += delta;
+    if (l.qty <= 0) state.cart.delete(key);
     cartChanged();
   }
   /** Detail page "Add to Cart": merges with an existing line that has the same note. Max 20 of one drink. */
@@ -634,6 +643,25 @@
     ];
   }
 
+  /** One cart row: thumbnail and name on the left (price and note under it), quantity stepper on the right. */
+  function cartRow(l) {
+    const src = l.item.thumbUrl || l.item.imageUrl;
+    const thumb = src
+      ? h('img', { class: 'cart-thumb photo', src, alt: '', width: 56, height: 84 })
+      : h('div', { class: 'cart-thumb', 'aria-hidden': 'true' }, '🍸');
+    const name = l.note ? `${l.item.name} (${l.note})` : l.item.name;
+    return h('div', { class: 'cart-line' },
+      thumb,
+      h('div', { class: 'cart-info' },
+        h('div', { class: 'cart-name' }, l.item.name),
+        h('div', { class: 'cart-price' }, baht(l.item.priceSatang * l.qty)),
+        l.note ? h('div', { class: 'cart-note' }, `Note: ${l.note}`) : null),
+      h('div', { class: 'qty', role: 'group', 'aria-label': `Quantity of ${name}` },
+        h('button', { type: 'button', 'aria-label': `Remove one ${name}`, onclick: () => adjustLine(l.key, -1) }, '−'),
+        h('output', { 'aria-live': 'polite' }, l.qty),
+        h('button', { type: 'button', class: 'plus', 'aria-label': `Add one ${name}`, disabled: itemQty(l.item.id) >= 20, onclick: () => adjustLine(l.key, 1) }, '+')));
+  }
+
   function viewCart() {
     const lines = cartLines();
     const notes = h('textarea', { id: 'notes', maxlength: 200, placeholder: 'e.g. less ice, no garnish', oninput: (e) => { state.notes = e.target.value; state.pending = null; saveCart(); } });
@@ -641,10 +669,7 @@
     return [
       h('div', { class: 'section' }, h('h2', {}, 'Your order'), flash(),
         h('div', { class: 'card' },
-          lines.length ? lines.map((l) => [h('div', { class: 'line' },
-            h('span', {}, h('span', { class: 'q' }, `${l.qty} ×`), l.item.name, h('span', { class: 'small muted' }, ` @ ${baht(l.item.priceSatang)}`)),
-            h('span', {}, baht(l.item.priceSatang * l.qty))),
-            l.note ? h('div', { class: 'line-note' }, `Note: ${l.note}`) : null]) : h('p', { class: 'muted' }, 'Your cart is empty.'),
+          lines.length ? h('div', { class: 'cart-lines' }, lines.map(cartRow)) : h('p', { class: 'muted' }, 'Your cart is empty.'),
           h('div', { class: 'line total' }, h('span', {}, 'Total'), h('span', {}, baht(cartTotal())))),
         h('label', { for: 'notes' }, 'Note to staff for the whole order (optional)'), notes,
         h('p', { class: 'small muted' }, 'Prices are final and shown in Thai Baht. You pay for the whole table at the end.')),
