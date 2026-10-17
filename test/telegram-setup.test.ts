@@ -40,3 +40,8 @@ test("Telegram setup verifies exact bot and unique staff group before changing s
     [{ id: "-100123", title: "224 Event" }],
   );
 });
+
+ test("group title matching tolerates formatting spaces without matching a different group",()=>{
+ assert.equal(matchingGroups([{message:{chat:{id:-1,title:" 224\u00a0Event ",type:"group"}}}]).length,1);
+ assert.equal(matchingGroups([{message:{chat:{id:-1,title:"224 Event Other",type:"group"}}}]).length,0);
+ });

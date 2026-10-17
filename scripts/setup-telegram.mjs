@@ -12,7 +12,7 @@ export function matchingGroups(updates) {
       u.my_chat_member?.chat ??
       u.callback_query?.message?.chat;
     if (
-      chat?.title === EXPECTED_GROUP &&
+      chat?.title?.normalize("NFKC").replace(/\s+/g, " ").trim() === EXPECTED_GROUP &&
       ["group", "supergroup"].includes(chat.type)
     ) {
       const id = u.message?.migrate_to_chat_id ?? chat.id;
@@ -86,10 +86,17 @@ async function run() {
     group = { id: process.env.TELEGRAM_STAFF_CHAT_ID };
   else if (!webhook.url) {
     const updates = await telegram("getUpdates", {
-      timeout: 0,
+      timeout: 10,
       limit: 100,
       allowed_updates: ["message", "callback_query", "my_chat_member"],
     });
+    console.log(`Telegram returned ${updates.length} pending update(s).`);
+    const seen = new Map();
+    for (const update of updates) {
+      const candidate = update.message?.chat ?? update.my_chat_member?.chat ?? update.callback_query?.message?.chat;
+      if (candidate && ["group", "supergroup"].includes(candidate.type)) seen.set(String(candidate.id), { id: String(candidate.id), title: candidate.title, type: candidate.type });
+    }
+    console.log("Observed group metadata: " + JSON.stringify([...seen.values()]));
     group = requireUniqueGroup(matchingGroups(updates));
   } else {
     // A prior setup may have connected the webhook without saving chat ID in
@@ -110,7 +117,7 @@ async function run() {
   }
   const chat = await telegram("getChat", { chat_id: group.id });
   if (
-    chat.title !== EXPECTED_GROUP ||
+    chat.title?.normalize("NFKC").replace(/\s+/g, " ").trim() !== EXPECTED_GROUP ||
     !["group", "supergroup"].includes(chat.type)
   )
     throw new Error(
