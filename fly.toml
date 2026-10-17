@@ -1,0 +1,24 @@
+# Fly.io config. Change `app` to a unique name before `fly launch --copy-config`.
+app = "224-live-house"
+primary_region = "sin"   # Singapore: closest to Bangkok
+
+[build]
+
+[env]
+  PUBLIC_BASE_URL = "https://REPLACE-WITH-YOUR-DOMAIN"
+  DISPLAY_TIMEZONE = "Asia/Bangkok"
+
+[mounts]
+  source = "data"        # the database lives on this volume, so it survives restarts and deploys
+  destination = "/data"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "off"   # the Telegram retry queue must keep running
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

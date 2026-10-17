@@ -27,6 +27,17 @@ const tableUrl = (token: string) => `${config.publicBaseUrl}/t/${token}`;
 const commands: Record<string, { usage: string; run: (args: string[]) => Promise<void> | void }> = {
   migrate: { usage: 'migrate', run: () => console.log('Database is up to date.') },
 
+  'db:backup': {
+    usage: 'db:backup <output-file.db>   (consistent snapshot, safe while the server is running)',
+    run: ([out]) => {
+      if (!out) throw new Error('usage: db:backup <output-file.db>');
+      const file = path.resolve(out);
+      if (fs.existsSync(file)) throw new Error(`${file} already exists`);
+      db.run(`VACUUM INTO '${file.replace(/'/g, "''")}'`);
+      console.log(`Backup written to ${file}`);
+    },
+  },
+
   'tables:ensure': {
     usage: 'tables:ensure <count>',
     run: ([count]) => {
