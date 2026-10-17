@@ -72,11 +72,11 @@ describe('reliability & security', () => {
     assert.deepEqual(menu.data.categories.map((c: any) => [c.name, c.items.length]), [['Kenneth’s Birthday Special', 3], ['Signature Cocktails', 6], ['Classic Cocktails', 12]]);
     const negroni = menu.data.categories[2].items.find((i: any) => i.name === 'Negroni');
     assert.deepEqual(negroni.ingredients, ['Gin', 'Campari', 'Sweet vermouth', 'Orange peel']);
-    assert.deepEqual(menu.data.categories[1].items[0].ingredients, []); // signature recipes come from the bar
+    assert.deepEqual(menu.data.categories[1].items[0].ingredients, []); // signature recipes come from the bar (Lost Cherry has none yet)
     const light = menu.data.categories[1].items.find((i: any) => i.name === 'The Morning Light');
     assert.equal(light.imageUrl, '/static/menu/the-morning-light.webp');
     assert.equal(light.thumbUrl, '/static/menu/the-morning-light-thumb.webp');
-    assert.equal(menu.data.categories[1].items[0].imageUrl, null); // only The Morning Light has a photo so far
+    assert.equal(menu.data.categories[1].items[0].imageUrl, '/static/menu/lost-cherry.webp');
     assert.deepEqual(light.ingredients, ['Suntory Kakubin Whiskey', 'Chrysanthemum liqueur', 'Cointreau', 'Wild honey', 'Lemon juice', 'Angostura bitters', 'Sea salt']);
     assert.match(light.description, /^“The Morning Light” is a homage to Hiroshi Senju/);
     assert.match(light.description, /deeply rooted in nature\.$/);
