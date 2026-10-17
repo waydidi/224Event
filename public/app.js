@@ -369,13 +369,13 @@
 
   const scrollTop = () => { (document.querySelector('.phone-scroll') || document.scrollingElement).scrollTop = 0; };
 
-  /** Floating bar at the bottom centre. The menu is home: tapping the active tab again returns to it. */
+  /** Floating button at the bottom centre. The menu is home: tapping My Orders again returns to it. */
   function floatNav() {
     const waiting = state.status.orders.filter((o) => o.status === 'NEW').length;
     const btn = (id, label, badge) => h('button', { type: 'button', 'aria-current': state.tab === id ? 'page' : null,
       onclick: () => { state.tab = state.tab === id ? 'menu' : id; state.showCart = false; state.flash = null; render(); scrollTop(); } },
       label, badge ? h('span', { class: 'badge', 'aria-label': `${badge} waiting` }, badge) : null);
-    return h('nav', { class: 'float-nav', 'aria-label': 'My orders and payment' }, btn('orders', 'My Orders', waiting || null), btn('bill', 'Pay'));
+    return h('nav', { class: 'float-nav', 'aria-label': 'My orders' }, btn('orders', 'My Orders', waiting || null));
   }
 
   // The bar slides out of the way while the page scrolls down and returns on scroll up (or at the top).
@@ -730,10 +730,16 @@
   function viewOrders() {
     const orders = state.status.orders.slice().reverse();
     const placed = state.lastPlaced && orders.find((o) => o.orderNumber === state.lastPlaced.orderNumber);
+    const bill = state.status.bill;
+    const canRequest = state.status.session.status !== 'PAYMENT_REQUESTED' && bill.lines.length > 0; // no separate Pay tab: payment is requested from here
     return [h('div', { class: 'section' }, menuLink(),
       placed ? h('div', { class: 'alert ok', role: 'status' }, `Order received · ${placed.orderNumber}. We’ll bring it to your table.`) : null,
+      state.status.session.status === 'PAYMENT_REQUESTED' ? h('div', { class: 'alert ok', role: 'status' }, `Payment requested · ${baht(bill.totalSatang)}. A staff member will come to your table.`) : null,
       h('h2', {}, `Orders for ${state.status.session.code}`),
-      orders.length ? orders.map(orderCard) : h('p', { class: 'muted' }, 'No orders yet. Everyone at your table can order from their own phone — all orders go on one bill.'))];
+      orders.length ? orders.map(orderCard) : h('p', { class: 'muted' }, 'No orders yet. Everyone at your table can order from their own phone — all orders go on one bill.'),
+      flash()),
+    canRequest ? h('div', { class: 'cta-bar' }, h('button', { class: 'btn', type: 'button', disabled: state.busy, onclick: requestPayment },
+      state.busy ? 'Requesting…' : h('span', {}, 'Request Payment'), state.busy ? null : h('span', { class: 'spread' }, baht(bill.totalSatang)))) : null];
   }
 
   function billLines(bill) {
