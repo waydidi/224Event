@@ -61,15 +61,15 @@ describe('reliability & security', () => {
     assert.equal(env.app.ctx.db.get<{ c: number }>('SELECT COUNT(*) AS c FROM payments')!.c, 1);
   });
 
-  test('16. No order is accepted until all 18 cocktails have configured prices', async () => {
+  test('16. No order is accepted until every cocktail (18 + 3 birthday specials) has a configured price', async () => {
     env = await setup({ prices: false });
-    assert.equal(env.app.ctx.db.get<{ c: number }>('SELECT COUNT(*) AS c FROM menu_items')!.c, 18);
+    assert.equal(env.app.ctx.db.get<{ c: number }>('SELECT COUNT(*) AS c FROM menu_items')!.c, 21);
     const menu = await http(env, 'GET', '/api/public/menu');
     assert.equal(menu.data.orderingEnabled, false);
-    assert.deepEqual(menu.data.categories.map((c: any) => [c.name, c.items.length]), [['Signature Cocktails', 6], ['Classic Cocktails', 12]]);
-    const negroni = menu.data.categories[1].items.find((i: any) => i.name === 'Negroni');
+    assert.deepEqual(menu.data.categories.map((c: any) => [c.name, c.items.length]), [['Ken’s birthday Special', 3], ['Signature Cocktails', 6], ['Classic Cocktails', 12]]);
+    const negroni = menu.data.categories[2].items.find((i: any) => i.name === 'Negroni');
     assert.deepEqual(negroni.ingredients, ['Gin', 'Campari', 'Sweet vermouth', 'Orange peel']);
-    assert.deepEqual(menu.data.categories[0].items[0].ingredients, []); // signature recipes come from the bar
+    assert.deepEqual(menu.data.categories[1].items[0].ingredients, []); // signature recipes come from the bar
     const s = await openTable(env, 1);
     const token = await join(env, 1, s.join_pin);
     // Price all but one.
@@ -85,7 +85,7 @@ describe('reliability & security', () => {
   test('PIN brute force locks the session until staff issues a new PIN', async () => {
     env = await setup({ env: { PIN_MAX_FAILED_ATTEMPTS: '3' } });
     const s = await openTable(env, 1);
-    const wrong = s.join_pin === '123456' ? '654321' : '123456';
+    const wrong = s.join_pin === '12' ? '21' : '12';
     for (let i = 0; i < 3; i++) assert.equal((await http(env, 'POST', '/api/public/session/join', { qrToken: env.qr(1), pin: wrong })).status, 401);
     const locked = await http(env, 'POST', '/api/public/session/join', { qrToken: env.qr(1), pin: s.join_pin });
     assert.equal(locked.status, 423);

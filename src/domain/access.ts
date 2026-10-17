@@ -36,7 +36,7 @@ export function joinSession(ctx: Ctx, qrToken: string, pin: string) {
     if (session.pin_failed_attempts >= max) {
       return { error: new AppError(423, 'PIN_LOCKED', 'Too many incorrect PINs. Please ask staff for a new PIN.') };
     }
-    if (!/^\d{6}$/.test(pin) || !safeEqual(pin, session.join_pin)) {
+    if (!/^\d+$/.test(pin) || !safeEqual(pin, session.join_pin)) {
       ctx.db.run('UPDATE table_sessions SET pin_failed_attempts = pin_failed_attempts + 1 WHERE id = ?', [session.id]);
       audit(ctx, { type: 'system' }, 'session.join_failed', 'session', session.id, { attempts: session.pin_failed_attempts + 1 });
       // Committed (not rolled back) so the attempt counter actually counts.

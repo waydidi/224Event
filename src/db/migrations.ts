@@ -294,8 +294,23 @@ UPDATE menu_items SET ingredients = '["Rye whiskey", "Sweet vermouth", "Angostur
 UPDATE menu_items SET ingredients = '["Gin", "Lemon juice", "Sugar syrup", "Soda water"]' WHERE code = 'gin-fizz';
 `;
 
+// Event-specific category. Prices are NULL until approved, like the rest of the menu.
+const kensBirthday = `
+INSERT INTO menu_categories(id, code, name, sort_order) VALUES (3, 'kens-birthday', 'Ken’s birthday Special', 3);
+INSERT INTO menu_items(category_id, code, name, price_satang, available, sort_order, updated_at) VALUES
+  (3, 'ken-224', '224', NULL, 1, 1, '1970-01-01T00:00:00.000Z'),
+  (3, 'ken-33', '33', NULL, 1, 2, '1970-01-01T00:00:00.000Z'),
+  (3, 'ken-infinity', 'Infinity', NULL, 1, 3, '1970-01-01T00:00:00.000Z');
+`;
+
 export const migrations: Migration[] = [
   { version: 1, name: 'schema', sql: schema },
   { version: 2, name: 'seed_menu', sql: seedMenu },
   { version: 3, name: 'menu_ingredients', sql: ingredients },
+  { version: 4, name: 'kens_birthday_special', sql: kensBirthday },
+  {
+    version: 5,
+    name: 'category_order',
+    sql: `UPDATE menu_categories SET sort_order = CASE code WHEN 'kens-birthday' THEN 1 WHEN 'signature' THEN 2 WHEN 'classic' THEN 3 ELSE sort_order END;`,
+  },
 ];

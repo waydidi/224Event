@@ -34,6 +34,7 @@ export interface Config {
   };
   access: {
     visitTokenTtlHours: number;
+    pinLength: number;
     pinMaxFailedAttempts: number;
   };
   outbox: {
@@ -57,6 +58,12 @@ function bool(value: string | undefined, fallback: boolean): boolean {
 function list(value: string | undefined, sep: string, fallback: string[]): string[] {
   if (value === undefined || value.trim() === '') return fallback;
   return value.split(sep).map((s) => s.trim()).filter(Boolean);
+}
+
+function pinLength(value: string | undefined): number {
+  const n = int(value, 2, 'PIN_LENGTH');
+  if (n < 2 || n > 8) throw new Error('PIN_LENGTH must be between 2 and 8');
+  return n;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env, overrides: Partial<Config> = {}): Config {
@@ -99,7 +106,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, overrides: Part
     },
     access: {
       visitTokenTtlHours: int(env.VISIT_TOKEN_TTL_HOURS, 12, 'VISIT_TOKEN_TTL_HOURS') || 12,
-      pinMaxFailedAttempts: int(env.PIN_MAX_FAILED_ATTEMPTS, 10, 'PIN_MAX_FAILED_ATTEMPTS') || 10,
+      pinLength: pinLength(env.PIN_LENGTH),
+      pinMaxFailedAttempts: int(env.PIN_MAX_FAILED_ATTEMPTS, 5, 'PIN_MAX_FAILED_ATTEMPTS') || 5,
     },
     outbox: {
       pollIntervalMs: int(env.OUTBOX_POLL_INTERVAL_MS, 1000, 'OUTBOX_POLL_INTERVAL_MS') || 1000,

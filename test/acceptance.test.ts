@@ -30,7 +30,7 @@ describe('224 Live House acceptance (spec §13)', () => {
   test('2. Staff opens first session; system assigns TABLE1-1 and posts the PIN', async () => {
     const s = await openTable(env, 1);
     assert.equal(s.session_code, 'TABLE1-1');
-    assert.match(s.join_pin, /^\d{6}$/);
+    assert.match(s.join_pin, /^\d{2}$/);
     pin = s.join_pin;
     assert.ok(env.tg.sent((t) => t.includes('TABLE 1 OPENED') && t.includes(pin)).length === 1);
     const r = await http(env, 'GET', `/api/public/table/${env.qr(1)}`);
@@ -41,7 +41,7 @@ describe('224 Live House acceptance (spec §13)', () => {
   });
 
   test('QR alone is not enough: wrong PIN is rejected', async () => {
-    const r = await http(env, 'POST', '/api/public/session/join', { qrToken: env.qr(1), pin: '000000' === pin ? '111111' : '000000' });
+    const r = await http(env, 'POST', '/api/public/session/join', { qrToken: env.qr(1), pin: pin === '00' ? '11' : '00' });
     assert.equal(r.status, 401);
     assert.equal(r.data.error.code, 'INVALID_PIN');
     const noToken = await http(env, 'POST', '/api/public/orders', { items: [], idempotencyKey: 'abcdefgh' });
