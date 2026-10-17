@@ -1,0 +1,20 @@
+-- Generated from src/db/migrations.ts. Do not edit directly.
+INSERT INTO menu_categories(id, code, name, sort_order) VALUES (1, 'signature', 'Signature Cocktails', 1), (2, 'classic', 'Classic Cocktails', 2);
+INSERT INTO menu_items(category_id, code, name, price_satang, available, sort_order, updated_at) VALUES (1, 'lost-cherry', 'Lost Cherry', NULL, 1, 1, '1970-01-01T00:00:00.000Z');
+INSERT INTO menu_items(category_id, code, name, price_satang, available, sort_order, updated_at) VALUES (1, '224-fireball', '224 Fireball', NULL, 1, 2, '1970-01-01T00:00:00.000Z');
+INSERT INTO menu_items(category_id, code, name, price_satang, available, sort_order, updated_at) VALUES (1, 'mango-sticky-rice', 'Mango Sticky Rice', NULL, 1, 3, '1970-01-01T00:00:00.000Z');
+INSERT INTO menu_items(category_id, code, name, price_satang, available, sort_order, updated_at) VALUES (1, 'the-basket-case', 'The Basket Case', NULL, 1, 4, '1970-01-01T00:00:00.000Z');
+INSERT INTO menu_items(category_id, code, name, price_satang, available, sort_order, updated_at) VALUES (1, 'naoko', 'Naoko', NULL, 1, 5, '1970-01-01T00:00:00.000Z');
+INSERT INTO menu_items(category_id, code, name, price_satang, available, sort_order, updated_at) VALUES (1, 'the-morning-light', 'The Morning Light', NULL, 1, 6, '1970-01-01T00:00:00.000Z');
+INSERT INTO menu_items(category_id, code, name, price_satang, available, sort_order, updated_at) VALUES (2, 'negroni', 'Negroni', NULL, 1, 1, '1970-01-01T00:00:00.000Z');
+INSERT INTO menu_items(category_id, code, name, price_satang, available, sort_order, updated_at) VALUES (2, 'old-fashioned', 'Old Fashioned', NULL, 1, 2, '1970-01-01T00:00:00.000Z');
+INSERT INTO menu_items(category_id, code, name, price_satang, available, sort_order, updated_at) VALUES (2, 'cosmopolitan', 'Cosmopolitan', NULL, 1, 3, '1970-01-01T00:00:00.000Z');
+INSERT INTO menu_items(category_id, code, name, price_satang, available, sort_order, updated_at) VALUES (2, 'espresso-martini', 'Espresso Martini', NULL, 1, 4, '1970-01-01T00:00:00.000Z');
+INSERT INTO menu_items(category_id, code, name, price_satang, available, sort_order, updated_at) VALUES (2, 'margarita', 'Margarita', NULL, 1, 5, '1970-01-01T00:00:00.000Z');
+INSERT INTO menu_items(category_id, code, name, price_satang, available, sort_order, updated_at) VALUES (2, 'mojito', 'Mojito', NULL, 1, 6, '1970-01-01T00:00:00.000Z');
+INSERT INTO menu_items(category_id, code, name, price_satang, available, sort_order, updated_at) VALUES (2, 'daiquiri', 'Daiquiri', NULL, 1, 7, '1970-01-01T00:00:00.000Z');
+INSERT INTO menu_items(category_id, code, name, price_satang, available, sort_order, updated_at) VALUES (2, 'whiskey-sour', 'Whiskey Sour', NULL, 1, 8, '1970-01-01T00:00:00.000Z');
+INSERT INTO menu_items(category_id, code, name, price_satang, available, sort_order, updated_at) VALUES (2, 'martini', 'Martini', NULL, 1, 9, '1970-01-01T00:00:00.000Z');
+INSERT INTO menu_items(category_id, code, name, price_satang, available, sort_order, updated_at) VALUES (2, 'long-island-iced-tea', 'Long Island Iced Tea', NULL, 1, 10, '1970-01-01T00:00:00.000Z');
+INSERT INTO menu_items(category_id, code, name, price_satang, available, sort_order, updated_at) VALUES (2, 'manhattan', 'Manhattan', NULL, 1, 11, '1970-01-01T00:00:00.000Z');
+INSERT INTO menu_items(category_id, code, name, price_satang, available, sort_order, updated_at) VALUES (2, 'gin-fizz', 'Gin Fizz', NULL, 1, 12, '1970-01-01T00:00:00.000Z');

@@ -10,7 +10,13 @@
     "erasableSyntaxOnly": true,
     "noUncheckedIndexedAccess": false,
     "skipLibCheck": true,
-    "types": ["node"]
+    "types": [
+      "node",
+      "@cloudflare/workers-types"
+    ]
   },
-  "include": ["src", "test"]
+  "include": [
+    "src",
+    "test"
+  ]
 }

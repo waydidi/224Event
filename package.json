@@ -11,16 +11,28 @@
     "start": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning src/index.ts",
     "admin": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning src/cli.ts",
     "test": "node --disable-warning=ExperimentalWarning --test --test-concurrency=1 test/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "dev:worker": "wrangler dev",
+    "build:worker": "wrangler deploy --dry-run --outdir dist/worker",
+    "migrations:generate": "node scripts/export-d1-migrations.mjs && node scripts/export-worker-migration.mjs",
+    "test:worker": "npm run build:worker && node --disable-warning=ExperimentalWarning --test --test-concurrency=1 test/worker/*.test.ts",
+    "test:e2e": "playwright test",
+    "check:critical": "npm run typecheck && npm test && npm run test:worker && npm run test:e2e"
   },
   "dependencies": {
+    "@pdf-lib/fontkit": "^1.1.1",
+    "pdf-lib": "^1.17.1",
     "pdfkit": "^0.17.2",
     "qrcode": "^1.5.4"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261016.1",
+    "@playwright/test": "1.56.1",
     "@types/node": "^22.18.0",
     "@types/pdfkit": "^0.17.6",
     "@types/qrcode": "^1.5.6",
-    "typescript": "^5.9.3"
+    "miniflare": "5.20261012.1-beta",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.151.1"
   }
 }

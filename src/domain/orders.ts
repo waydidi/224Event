@@ -44,7 +44,7 @@ export interface PlaceOrderInput {
   expectedTotalSatang?: number;
 }
 
-function normalize(input: unknown): { items: { menuItemId: number; quantity: number; note: string }[]; notes: string | null; idempotencyKey: string; expectedTotalSatang?: number } {
+export function normalize(input: unknown): { items: { menuItemId: number; quantity: number; note: string }[]; notes: string | null; idempotencyKey: string; expectedTotalSatang?: number } {
   const body = (input ?? {}) as Record<string, unknown>;
   const key = body.idempotencyKey;
   if (typeof key !== 'string' || !/^[A-Za-z0-9_-]{8,64}$/.test(key)) throw badRequest('INVALID_IDEMPOTENCY_KEY', 'Missing or invalid idempotency key');

@@ -5,3 +5,9 @@ data/
 *.db-shm
 .env
 qr-codes/
+
+.wrangler/
+dist/
+playwright-report/
+test-results/
+.dev.vars
