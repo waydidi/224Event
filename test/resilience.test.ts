@@ -73,7 +73,7 @@ describe('reliability & security', () => {
     const negroni = menu.data.categories[2].items.find((i: any) => i.name === 'Negroni');
     assert.deepEqual(negroni.ingredients, []); // classic recipes were never supplied by the bar, so none are shown
     assert.equal(negroni.description, null);
-    const supplied = ['The Morning Light', 'Naoko', 'The Basket Case', '224', '33 — 三十三', 'INFINITY ∞'];
+    const supplied = ['The Morning Light', 'Naoko', 'The Basket Case', '224', '33 三三', 'INFINITY ∞'];
     for (const it of menu.data.categories.flatMap((c: any) => c.items)) if (!supplied.includes(it.name)) assert.deepEqual([it.description, it.ingredients], [null, []], it.name);
     assert.deepEqual(menu.data.categories[1].items[0].ingredients, []); // signature recipes come from the bar (Lost Cherry has none yet)
     const light = menu.data.categories[1].items.find((i: any) => i.name === 'The Morning Light');
@@ -96,7 +96,7 @@ describe('reliability & security', () => {
     for (const u of [basket.imageUrl, basket.thumbUrl, basket.fullUrl]) assert.equal((await http(env, 'GET', u)).status, 200);
     const k224 = menu.data.categories[0].items.find((i: any) => i.name === '224');
     for (const u of [k224.imageUrl, k224.thumbUrl, k224.fullUrl]) assert.equal((await http(env, 'GET', u)).status, 200);
-    for (const n of ['33 — 三十三', 'INFINITY ∞']) {
+    for (const n of ['33 三三', 'INFINITY ∞']) {
       const it = menu.data.categories[0].items.find((i: any) => i.name === n);
       for (const u of [it.imageUrl, it.thumbUrl, it.fullUrl]) assert.equal((await http(env, 'GET', u)).status, 200);
     }
@@ -119,7 +119,7 @@ describe('reliability & security', () => {
     for (const u of [oldf.imageUrl, oldf.thumbUrl, oldf.fullUrl]) assert.equal((await http(env, 'GET', u)).status, 200);
     const mojito = menu.data.categories[2].items.find((i: any) => i.name === 'Mojito');
     for (const u of [mojito.imageUrl, mojito.thumbUrl, mojito.fullUrl]) assert.equal((await http(env, 'GET', u)).status, 200);
-    const k33 = menu.data.categories[0].items.find((i: any) => i.name === '33 — 三十三');
+    const k33 = menu.data.categories[0].items.find((i: any) => i.name === '33 三三');
     assert.match(k33.description, /^Somewhere between what has passed/);
     assert.match(k33.description, /beauty of the in-between\.$/);
     assert.deepEqual(k33.ingredients, ['Bijofu Tokubetsu Junmai', 'Newby Oriental Sencha', 'Sea salt', 'Wild honey']);

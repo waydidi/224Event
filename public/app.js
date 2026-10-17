@@ -367,13 +367,13 @@
 
   const scrollTop = () => { (document.querySelector('.phone-scroll') || document.scrollingElement).scrollTop = 0; };
 
-  /** Floating button at the bottom centre. The menu is home: tapping My Orders again returns to it. */
+  /** Floating bar at the bottom centre. The menu is home: tapping the active tab again returns to it. */
   function floatNav() {
     const waiting = state.status.orders.filter((o) => o.status === 'NEW').length;
     const btn = (id, label, badge) => h('button', { type: 'button', 'aria-current': state.tab === id ? 'page' : null,
       onclick: () => { state.tab = state.tab === id ? 'menu' : id; state.showCart = false; state.flash = null; render(); scrollTop(); } },
       label, badge ? h('span', { class: 'badge', 'aria-label': `${badge} waiting` }, badge) : null);
-    return h('nav', { class: 'float-nav', 'aria-label': 'My orders' }, btn('orders', 'My Orders', waiting || null));
+    return h('nav', { class: 'float-nav', 'aria-label': 'My orders and payment' }, btn('orders', 'My Orders', waiting || null), btn('bill', 'Pay'));
   }
 
   // The bar slides out of the way while the page scrolls down and returns on scroll up (or at the top).
@@ -728,16 +728,10 @@
   function viewOrders() {
     const orders = state.status.orders.slice().reverse();
     const placed = state.lastPlaced && orders.find((o) => o.orderNumber === state.lastPlaced.orderNumber);
-    const bill = state.status.bill;
-    const canRequest = state.status.session.status !== 'PAYMENT_REQUESTED' && bill.lines.length > 0; // no separate Pay tab: payment is requested from here
     return [h('div', { class: 'section' }, menuLink(),
       placed ? h('div', { class: 'alert ok', role: 'status' }, `Order received · ${placed.orderNumber}. We’ll bring it to your table.`) : null,
-      state.status.session.status === 'PAYMENT_REQUESTED' ? h('div', { class: 'alert ok', role: 'status' }, `Payment requested · ${baht(bill.totalSatang)}. A staff member will come to your table.`) : null,
       h('h2', {}, `Orders for ${state.status.session.code}`),
-      orders.length ? orders.map(orderCard) : h('p', { class: 'muted' }, 'No orders yet. Everyone at your table can order from their own phone — all orders go on one bill.'),
-      flash()),
-    canRequest ? h('div', { class: 'cta-bar' }, h('button', { class: 'btn', type: 'button', disabled: state.busy, onclick: requestPayment },
-      state.busy ? 'Requesting…' : h('span', {}, 'Request Payment'), state.busy ? null : h('span', { class: 'spread' }, baht(bill.totalSatang)))) : null];
+      orders.length ? orders.map(orderCard) : h('p', { class: 'muted' }, 'No orders yet. Everyone at your table can order from their own phone — all orders go on one bill.'))];
   }
 
   function billLines(bill) {
@@ -769,12 +763,23 @@
       state.busy ? 'Requesting…' : h('span', {}, 'Confirm & Request Payment'), state.busy ? null : h('span', { class: 'spread' }, baht(bill.totalSatang)))) : null];
   }
 
+  /** Pastel gift box with three balloons floating out of it (pure CSS, 3D). */
+  function partyScene() {
+    const face = (cls) => h('div', { class: `face ${cls}` });
+    const balloon = (cls) => h('div', { class: `balloon ${cls}` }, h('div', { class: 'b-bob' }, h('div', { class: 'b-body' }), h('div', { class: 'b-string' })));
+    return h('div', { class: 'party', 'aria-hidden': 'true' },
+      h('div', { class: 'gift' },
+        face('f-back'), face('f-left'), face('f-right'),
+        balloon('b1'), balloon('b2'), balloon('b3'),
+        face('f-front'), h('div', { class: 'lid' })));
+  }
+
   function viewPending() {
     const bill = state.status.bill;
     return [h('div', { class: 'hero', role: 'status' },
-      h('div', { class: 'icon', 'aria-hidden': 'true' }, '🧾'),
-      h('h2', {}, 'Payment requested'),
-      h('p', {}, 'Please wait — a staff member will come to your table to collect payment.'),
+      partyScene(),
+      h('h2', {}, 'Cheers, have a good evening.'),
+      h('p', {}, 'A staff member will come to your table to collect payment.'),
       h('div', { class: 'amount' }, baht(bill.totalSatang)),
       h('p', { class: 'small' }, h('span', { class: 'pulse', 'aria-hidden': 'true' }), ' Awaiting payment confirmation')),
     h('div', { class: 'section' }, flash(), h('h2', {}, bill.billNumber ? `Bill ${bill.billNumber}` : 'Bill'), billLines(bill),

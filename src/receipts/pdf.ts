@@ -26,7 +26,7 @@ export interface ReceiptItem {
   lineTotalSatang: number;
 }
 
-/** The receipt font has no CJK glyphs: "33 — 三十三" prints as "33". */
+/** The receipt font has no CJK glyphs: "33 — 三三" prints as "33". */
 const receiptName = (name: string) => name.replace(/[\u3000-\u9fff\uff00-\uffef]+/g, '').replace(/[\s—-]+$/, '').trim() || name;
 
 /** Same item at the same price across several orders prints as one line. */
