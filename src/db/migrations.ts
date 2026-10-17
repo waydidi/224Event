@@ -395,6 +395,13 @@ const mysteryPhoto = `
 UPDATE menu_items SET image_url = '/static/menu/mystery.webp', thumb_url = '/static/menu/mystery-thumb.webp', full_url = '/static/menu/mystery-full.webp' WHERE code IN ('ken-33', 'ken-infinity');
 `;
 
+// Launch prices (THB 520 / 480 / 360), applied only to items that still have none so later staff edits are never overwritten.
+const launchPrices = `
+UPDATE menu_items SET price_satang = CASE (SELECT code FROM menu_categories c WHERE c.id = menu_items.category_id)
+  WHEN 'kens-birthday' THEN 52000 WHEN 'signature' THEN 48000 WHEN 'classic' THEN 36000 END
+WHERE price_satang IS NULL;
+`;
+
 export const migrations: Migration[] = [
   { version: 1, name: 'schema', sql: schema },
   { version: 2, name: 'seed_menu', sql: seedMenu },
@@ -417,4 +424,5 @@ export const migrations: Migration[] = [
   { version: 15, name: 'ken_224_photo', sql: ken224Photo },
   { version: 16, name: 'ken_224_details', sql: ken224Details },
   { version: 17, name: 'mystery_photo', sql: mysteryPhoto },
+  { version: 18, name: 'launch_prices', sql: launchPrices },
 ];

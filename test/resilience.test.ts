@@ -66,7 +66,9 @@ describe('reliability & security', () => {
     env = await setup({ prices: false });
     assert.equal(env.app.ctx.db.get<{ c: number }>('SELECT COUNT(*) AS c FROM menu_items')!.c, 21);
     const menu = await http(env, 'GET', '/api/public/menu');
-    assert.equal(menu.data.orderingEnabled, false);
+    // Launch prices come from a migration: birthday 520, signature 480, classic 360.
+    assert.equal(menu.data.orderingEnabled, true);
+    assert.deepEqual(menu.data.categories.map((c: any) => [...new Set(c.items.map((i: any) => i.priceSatang))]), [[52000], [48000], [36000]]);
     assert.deepEqual(menu.data.categories.map((c: any) => [c.name, c.items.length]), [['Kenneth’s Birthday Special', 3], ['Signature Cocktails', 6], ['Classic Cocktails', 12]]);
     const negroni = menu.data.categories[2].items.find((i: any) => i.name === 'Negroni');
     assert.deepEqual(negroni.ingredients, ['Gin', 'Campari', 'Sweet vermouth', 'Orange peel']);
@@ -108,7 +110,8 @@ describe('reliability & security', () => {
     assert.doesNotMatch(JSON.stringify([naoko.ingredients, naoko.description]), /\d|\bml\b|\bdrops?\b|double strain|garnish|shake/i);
     const s = await openTable(env, 1);
     const token = await join(env, 1, s.join_pin);
-    // Price all but one.
+    // Price all but one (start from an unpriced menu: the launch prices come from a migration).
+    env.app.ctx.db.run('UPDATE menu_items SET price_satang = NULL');
     const items = env.app.ctx.db.all<{ id: number }>('SELECT id FROM menu_items ORDER BY id');
     for (const it of items.slice(1)) env.app.ctx.db.run('UPDATE menu_items SET price_satang = 20000 WHERE id = ?', [it.id]);
     const r = await order(env, token, [['negroni', 1]]);
