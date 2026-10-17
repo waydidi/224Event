@@ -111,6 +111,7 @@ describe('reliability & security', () => {
     for (const u of [manhattan.imageUrl, manhattan.thumbUrl, manhattan.fullUrl]) assert.equal((await http(env, 'GET', u)).status, 200);
     const cosmo = menu.data.categories[2].items.find((i: any) => i.name === 'Cosmopolitan');
     for (const u of [cosmo.imageUrl, cosmo.thumbUrl, cosmo.fullUrl]) assert.equal((await http(env, 'GET', u)).status, 200);
+    for (const u of [negroni.imageUrl, negroni.thumbUrl, negroni.fullUrl]) assert.equal((await http(env, 'GET', u)).status, 200);
     const k33 = menu.data.categories[0].items.find((i: any) => i.name === '33 — 三十三');
     assert.match(k33.description, /^Somewhere between what has passed/);
     assert.match(k33.description, /beauty of the in-between\.$/);
