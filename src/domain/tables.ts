@@ -162,7 +162,7 @@ export function rotatePin(ctx: Ctx, tableNumber: number, actor: Actor & { type: 
  * Deliberate, audited recovery path: end an active session without payment.
  * Orders are preserved; any pending bill is cancelled. Never applies to paid sessions.
  */
-export function voidSession(ctx: Ctx, tableNumber: number, actor: Actor & { type: 'staff' }, opts: { onlyIfEmpty: boolean; reason: string }) {
+export function voidSession(ctx: Ctx, tableNumber: number, actor: Extract<Actor, { type: 'staff' | 'system' }>, opts: { onlyIfEmpty: boolean; reason: string }) {
   const result = ctx.db.tx(() => {
     const table = requireTable(ctx.db, tableNumber);
     const active = getActiveSession(ctx.db, table);
@@ -174,7 +174,7 @@ export function voidSession(ctx: Ctx, tableNumber: number, actor: Actor & { type
     const now = ctx.now().toISOString();
     const bill = ctx.db.get<{ id: number }>("SELECT id FROM bills WHERE session_id = ? AND status = 'REQUESTED'", [active.id]);
     if (bill) {
-      ctx.db.run("UPDATE bills SET status = 'CANCELLED', cancelled_at = ?, cancelled_by = ? WHERE id = ?", [now, actor.staff.id, bill.id]);
+      ctx.db.run("UPDATE bills SET status = 'CANCELLED', cancelled_at = ?, cancelled_by = ? WHERE id = ?", [now, actor.type === 'staff' ? actor.staff.id : null, bill.id]);
       enqueue(ctx, 'telegram.payment_card', { billId: bill.id });
     }
     ctx.db.run("UPDATE table_sessions SET status = 'VOIDED', closed_at = ? WHERE id = ?", [now, active.id]);

@@ -159,6 +159,11 @@ describe('reliability & security', () => {
     assert.equal(ens.status, 200);
     assert.equal(ens.data.output.filter((l: string) => l.startsWith('Table ')).length, 7);
     assert.ok(ens.data.output[6].includes('https://orders.example.com/t/'));
+    await openTable(env, 1);
+    const reset = await http(env, 'POST', '/api/internal/admin', { command: 'tables:reset', args: ['all'] }, auth);
+    assert.equal(reset.status, 200);
+    assert.ok(reset.data.output.some((l: string) => l.startsWith('Table 1: TABLE1-1 voided')));
+    assert.equal(env.app.ctx.db.get<{ status: string }>('SELECT status FROM tables WHERE display_number = 1')!.status, 'AVAILABLE');
     const bad = await http(env, 'POST', '/api/internal/admin', { command: 'nope' }, auth);
     assert.equal(bad.status, 400);
     assert.equal((await http(env, 'GET', '/api/internal/qr-sheet.pdf')).status, 401);

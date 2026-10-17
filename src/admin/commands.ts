@@ -5,7 +5,7 @@
 import type { Ctx } from '../context.ts';
 import { getMenu, menuReadiness, setPrice, updateItemDetails } from '../domain/menu.ts';
 import { upsertStaff, type Role } from '../domain/staff.ts';
-import { ensureTables, listTables } from '../domain/tables.ts';
+import { ensureTables, listTables, voidSession } from '../domain/tables.ts';
 import { formatBaht, parseBaht } from '../lib/money.ts';
 import { generateReceipt } from '../receipts/service.ts';
 import type { HttpTelegramClient } from '../telegram/api.ts';
@@ -35,6 +35,24 @@ export function adminCommands({ ctx, tg, out, fail }: AdminEnv): Record<string, 
       for (const t of ensureTables(ctx, n)) out(`Table ${t.display_number}\t${tableUrl(t.permanent_qr_token)}`);
     },
   },
+  'tables:reset': {
+    usage: 'tables:reset <table number | all>   (void the open session so the table waits for staff again; paid history is kept)',
+    run: ([which]) => {
+      if (!which) throw new Error('usage: tables:reset <table number | all>');
+      const numbers = which === 'all' ? listTables(db).map((t) => t.display_number) : [Number(which)];
+      for (const n of numbers) {
+        if (!Number.isInteger(n)) throw new Error('table number must be a whole number');
+        try {
+          const r = voidSession(ctx, n, { type: 'system' }, { onlyIfEmpty: false, reason: 'reset from admin' });
+          out(`Table ${n}: ${r.session.session_code} voided (${r.orderCount} order(s)); ready for the next guests`);
+        } catch (err) {
+          if (which !== 'all') throw err;
+          out(`Table ${n}: already waiting for staff`);
+        }
+      }
+    },
+  },
+
   'tables:list': {
     usage: 'tables:list',
     run: () => {
