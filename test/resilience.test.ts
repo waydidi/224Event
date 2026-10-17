@@ -107,6 +107,8 @@ describe('reliability & security', () => {
     for (const u of [sour.imageUrl, sour.thumbUrl, sour.fullUrl]) assert.equal((await http(env, 'GET', u)).status, 200);
     const martini = menu.data.categories[2].items.find((i: any) => i.name === 'Martini');
     for (const u of [martini.imageUrl, martini.thumbUrl, martini.fullUrl]) assert.equal((await http(env, 'GET', u)).status, 200);
+    const manhattan = menu.data.categories[2].items.find((i: any) => i.name === 'Manhattan');
+    for (const u of [manhattan.imageUrl, manhattan.thumbUrl, manhattan.fullUrl]) assert.equal((await http(env, 'GET', u)).status, 200);
     const k33 = menu.data.categories[0].items.find((i: any) => i.name === '33 — 三十三');
     assert.match(k33.description, /^Somewhere between what has passed/);
     assert.match(k33.description, /beauty of the in-between\.$/);
