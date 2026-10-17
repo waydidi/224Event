@@ -458,6 +458,10 @@ const manhattanPhoto = `
 UPDATE menu_items SET image_url = '/static/menu/manhattan.webp', thumb_url = '/static/menu/manhattan-thumb.webp', full_url = '/static/menu/manhattan-full.webp' WHERE name = 'Manhattan';
 `;
 
+const cosmopolitanPhoto = `
+UPDATE menu_items SET image_url = '/static/menu/cosmopolitan.webp', thumb_url = '/static/menu/cosmopolitan-thumb.webp', full_url = '/static/menu/cosmopolitan-full.webp' WHERE name = 'Cosmopolitan';
+`;
+
 export const migrations: Migration[] = [
   { version: 1, name: 'schema', sql: schema },
   { version: 2, name: 'seed_menu', sql: seedMenu },
@@ -490,4 +494,5 @@ export const migrations: Migration[] = [
   { version: 25, name: 'whiskey_sour_photo', sql: whiskeySourPhoto },
   { version: 26, name: 'martini_photo', sql: martiniPhoto },
   { version: 27, name: 'manhattan_photo', sql: manhattanPhoto },
+  { version: 28, name: 'cosmopolitan_photo', sql: cosmopolitanPhoto },
 ];
