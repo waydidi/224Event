@@ -470,6 +470,10 @@ const oldFashionedPhoto = `
 UPDATE menu_items SET image_url = '/static/menu/old-fashioned.webp', thumb_url = '/static/menu/old-fashioned-thumb.webp', full_url = '/static/menu/old-fashioned-full.webp' WHERE name = 'Old Fashioned';
 `;
 
+const mojitoPhoto = `
+UPDATE menu_items SET image_url = '/static/menu/mojito.webp', thumb_url = '/static/menu/mojito-thumb.webp', full_url = '/static/menu/mojito-full.webp' WHERE name = 'Mojito';
+`;
+
 export const migrations: Migration[] = [
   { version: 1, name: 'schema', sql: schema },
   { version: 2, name: 'seed_menu', sql: seedMenu },
@@ -505,4 +509,5 @@ export const migrations: Migration[] = [
   { version: 28, name: 'cosmopolitan_photo', sql: cosmopolitanPhoto },
   { version: 29, name: 'negroni_photo', sql: negroniPhoto },
   { version: 30, name: 'old_fashioned_photo', sql: oldFashionedPhoto },
+  { version: 31, name: 'mojito_photo', sql: mojitoPhoto },
 ];
