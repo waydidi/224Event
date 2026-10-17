@@ -9,6 +9,9 @@ import { safeEqual } from '../lib/ids.ts';
 import { RateLimiter } from '../lib/ratelimit.ts';
 import { generateReceipt, readReceiptPdf } from '../receipts/service.ts';
 import type { ReceiptRow } from '../receipts/model.ts';
+import { adminCommands } from '../admin/commands.ts';
+import { renderQrSheetPdf } from '../admin/qrsheet.ts';
+import { listTables } from '../domain/tables.ts';
 import type { TelegramClient } from '../telegram/api.ts';
 import { handleUpdate } from '../telegram/bot.ts';
 
@@ -242,10 +245,44 @@ export function createHandler(ctx: Ctx, tg: TelegramClient, files: StaticFiles) 
     1024 * 1024,
   );
 
-  add('POST', '/api/internal/receipt/generate', async (req) => {
+  const requireInternal = (req: Req) => {
     const token = ctx.config.internalApiToken;
     const got = bearer(req);
     if (!token || !got || !safeEqual(got, token)) throw new AppError(401, 'UNAUTHORIZED', 'Unauthorized');
+  };
+
+  // Operator commands over HTTPS (used on Cloudflare, where there is no shell): { "command": "tables:ensure", "args": ["7"] }
+  add('POST', '/api/internal/admin', async (req) => {
+    requireInternal(req);
+    limit(`admin:${req.ip}`, 30);
+    const b = (req.body ?? {}) as Record<string, unknown>;
+    const lines: string[] = [];
+    let failed = false;
+    const cmds = adminCommands({
+      ctx, tg: tg as never, fail: () => { failed = true; },
+      out: (l) => lines.push(typeof l === 'string' ? l : JSON.stringify(l)),
+    });
+    const cmd = typeof b.command === 'string' ? cmds[b.command] : undefined;
+    if (!cmd) return { status: 400, json: { ok: false, error: 'Unknown command', commands: Object.values(cmds).map((c) => c.usage) } };
+    const args = Array.isArray(b.args) ? b.args.map(String) : [];
+    try {
+      await cmd.run(args);
+    } catch (err) {
+      return { status: 400, json: { ok: false, output: lines, error: (err as Error).message } };
+    }
+    return { json: { ok: !failed, output: lines } };
+  });
+
+  add('GET', '/api/internal/qr-sheet.pdf', async (req) => {
+    requireInternal(req);
+    const tables = listTables(ctx.db);
+    if (!tables.length) throw badRequest('NO_TABLES', 'No tables yet: run tables:ensure first.');
+    const pdf = await renderQrSheetPdf(ctx.config.venue.name, tables.map((t) => ({ number: t.display_number, url: `${ctx.config.publicBaseUrl}/t/${t.permanent_qr_token}` })));
+    return { body: pdf, contentType: 'application/pdf', headers: { 'content-disposition': 'attachment; filename="table-qr-codes.pdf"', 'cache-control': 'no-store' } };
+  });
+
+  add('POST', '/api/internal/receipt/generate', async (req) => {
+    requireInternal(req);
     const b = (req.body ?? {}) as Record<string, unknown>;
     const receipt = typeof b.receiptNumber === 'string'
       ? ctx.db.get<ReceiptRow>('SELECT * FROM receipts WHERE receipt_number = ?', [b.receiptNumber])

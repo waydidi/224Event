@@ -151,6 +151,22 @@ describe('reliability & security', () => {
     assert.equal((await order(env, token, [['negroni', 1]])).status, 201);
   });
 
+  test('operator endpoints (used on Cloudflare): admin commands and the QR sheet need the internal token', async () => {
+    env = await setup();
+    const auth = { authorization: 'Bearer internal-test-token' };
+    assert.equal((await http(env, 'POST', '/api/internal/admin', { command: 'tables:list' })).status, 401);
+    const ens = await http(env, 'POST', '/api/internal/admin', { command: 'tables:ensure', args: ['7'] }, auth);
+    assert.equal(ens.status, 200);
+    assert.equal(ens.data.output.filter((l: string) => l.startsWith('Table ')).length, 7);
+    assert.ok(ens.data.output[6].includes('https://orders.example.com/t/'));
+    const bad = await http(env, 'POST', '/api/internal/admin', { command: 'nope' }, auth);
+    assert.equal(bad.status, 400);
+    assert.equal((await http(env, 'GET', '/api/internal/qr-sheet.pdf')).status, 401);
+    const pdf = await http(env, 'GET', '/api/internal/qr-sheet.pdf', undefined, auth);
+    assert.equal(pdf.status, 200);
+    assert.equal(Buffer.from(pdf.data).subarray(0, 5).toString(), '%PDF-');
+  });
+
   test('PIN brute force locks the session until staff issues a new PIN', async () => {
     env = await setup({ env: { PIN_MAX_FAILED_ATTEMPTS: '3' } });
     const s = await openTable(env, 1);
