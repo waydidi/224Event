@@ -669,12 +669,15 @@
     const focusId = active && active.id;
     const sel = active && 'selectionStart' in active ? [active.selectionStart, active.selectionEnd] : null;
     const tabsScroll = document.querySelector('.tabs')?.scrollLeft ?? 0; // keep pill row position across re-renders
+    const sheetScroll = document.querySelector('.detail-sheet')?.scrollTop ?? 0; // and the cocktail text panel's
     $app.replaceChildren(...nodes.flat().filter(Boolean));
     $app.classList.toggle('is-waiting', state.view === 'waiting');
     $app.classList.toggle('is-detail', !!$app.querySelector('.detail'));
     $app.classList.toggle('has-nav', !!$app.querySelector('.float-nav'));
     $app.classList.toggle('has-cta', !!$app.querySelector('.cta-bar'));
     if (!$app.querySelector('.float-nav')) setNavHidden(false); // start visible whenever the bar comes back
+    const sheet = document.querySelector('.detail-sheet');
+    if (sheet) sheet.scrollTop = sheetScroll;
     const tabs = document.querySelector('.tabs');
     if (tabs) {
       tabs.scrollLeft = tabsScroll;
