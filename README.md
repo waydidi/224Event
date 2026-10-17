@@ -30,7 +30,7 @@ Runtime dependencies: `pdfkit` and `qrcode`.
 npm install
 cp .env.example .env                 # fill in values (see Configuration)
 npm run admin -- tables:ensure 10    # create tables 1..10, each with a permanent QR token
-npm run admin -- price:set negroni 220   # …repeat for all 18 items, or use price:import
+npm run admin -- price:set negroni 220   # …repeat for all 21 items, or use price:import
 npm run admin -- staff:add 123456789 cashier "Somchai"
 npm start                            # http://localhost:3000
 npm test                             # acceptance + resilience tests
@@ -41,7 +41,7 @@ npm run typecheck
 
 ## Going live checklist (spec §15)
 
-1. **Prices.** Every one of the 18 cocktails needs an approved price. **Ordering stays disabled until they all have one.** The menu is seeded with `NULL` prices on purpose. Set them with:
+1. **Prices.** Every one of the 21 drinks (6 signature, 12 classic, and the 3 in "Ken’s birthday Special": 224, 33, Infinity) needs an approved price. **Ordering stays disabled until they all have one.** The menu is seeded with `NULL` prices on purpose. Set them with:
    ```bash
    npm run admin -- price:import prices.json   # { "lost-cherry": 280, "negroni": 220, ... }  (THB)
    npm run admin -- menu:list

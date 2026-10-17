@@ -61,12 +61,12 @@ describe('reliability & security', () => {
     assert.equal(env.app.ctx.db.get<{ c: number }>('SELECT COUNT(*) AS c FROM payments')!.c, 1);
   });
 
-  test('16. No order is accepted until all 18 cocktails have configured prices', async () => {
+  test('16. No order is accepted until every cocktail (18 + 3 birthday specials) has a configured price', async () => {
     env = await setup({ prices: false });
-    assert.equal(env.app.ctx.db.get<{ c: number }>('SELECT COUNT(*) AS c FROM menu_items')!.c, 18);
+    assert.equal(env.app.ctx.db.get<{ c: number }>('SELECT COUNT(*) AS c FROM menu_items')!.c, 21);
     const menu = await http(env, 'GET', '/api/public/menu');
     assert.equal(menu.data.orderingEnabled, false);
-    assert.deepEqual(menu.data.categories.map((c: any) => [c.name, c.items.length]), [['Signature Cocktails', 6], ['Classic Cocktails', 12]]);
+    assert.deepEqual(menu.data.categories.map((c: any) => [c.name, c.items.length]), [['Signature Cocktails', 6], ['Classic Cocktails', 12], ['Ken’s birthday Special', 3]]);
     const negroni = menu.data.categories[1].items.find((i: any) => i.name === 'Negroni');
     assert.deepEqual(negroni.ingredients, ['Gin', 'Campari', 'Sweet vermouth', 'Orange peel']);
     assert.deepEqual(menu.data.categories[0].items[0].ingredients, []); // signature recipes come from the bar
