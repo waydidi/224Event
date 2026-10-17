@@ -3,13 +3,25 @@ import { writeFileSync, appendFileSync } from "node:fs";
 import { deployedUrl } from "./deployed-url.mjs";
 const url = deployedUrl();
 async function request(path, init) {
-  const response = await fetch(url + path, {
-    ...init,
-    redirect: "manual",
-    signal: AbortSignal.timeout(20000),
-  });
-  return response;
+  // Worker code and asset routing metadata can propagate at different times.
+  // Never follow a redirect: wait for a direct success, or fail the check.
+  for (let attempt = 0; ; attempt++) {
+    const response = await fetch(url + path, {
+      ...init,
+      redirect: "manual",
+      signal: AbortSignal.timeout(20000),
+    });
+    const transient =
+      (!init?.method || init.method === "GET") &&
+      ((response.status >= 300 && response.status < 400) ||
+        response.status >= 500);
+    if (!transient || attempt >= 14) return response;
+    console.log(`Waiting for ${path}: HTTP ${response.status}`);
+    await response.body?.cancel();
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
 }
+
 let health;
 for (let i = 0; i < 5; i++) {
   const r = await request("/healthz");
