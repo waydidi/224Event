@@ -770,8 +770,8 @@
     return h('div', { class: 'party', 'aria-hidden': 'true' },
       h('div', { class: 'gift' },
         face('f-back'), face('f-left'), face('f-right'),
-        balloon('b1'), balloon('b2'), balloon('b3'),
-        face('f-front'), h('div', { class: 'lid' })));
+        face('f-front'), h('div', { class: 'lid' })),
+      h('div', { class: 'balloons' }, balloon('b1'), balloon('b2'), balloon('b3'), balloon('b4'), balloon('b5'))); // flat layer over the box, clipped at its rim: they rise out of the opening
   }
 
   function viewPending() {
@@ -780,8 +780,8 @@
       partyScene(),
       h('h2', {}, 'Cheers, have a good evening.'),
       h('p', {}, 'A staff member will come to your table to collect payment.'),
-      h('div', { class: 'amount' }, baht(bill.totalSatang)),
-      h('p', { class: 'small' }, h('span', { class: 'pulse', 'aria-hidden': 'true' }), ' Awaiting payment confirmation')),
+      h('div', { class: 'amount' }, 'FREE!'), // celebration banner only: the bill below and the payment card keep the real total
+    ),
     h('div', { class: 'section' }, flash(), h('h2', {}, bill.billNumber ? `Bill ${bill.billNumber}` : 'Bill'), billLines(bill),
       h('p', { class: 'small muted' }, 'Want another drink? Ask staff to reopen your bill.'))];
   }
