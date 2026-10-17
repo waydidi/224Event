@@ -180,9 +180,9 @@ label { display: block; font-weight: 650; margin-bottom: 8px; }
 label[for="pin"] { text-align: center; }
 
 /* Waiting screen: the logo, heading and table pill are centred on the screen. */
-.app.is-waiting { display: flex; flex-direction: column; padding-bottom: 0; }
+.app.is-waiting { display: flex; flex-direction: column; padding-bottom: 0; position: relative; }
 .app.is-detail { padding-bottom: 0; } /* the detail sheet reaches the bottom edge itself */
-.waiting-center { flex: 1; display: grid; place-items: center; } /* centred in the whole screen (there is no header on this page) */
+.waiting-center { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; } /* centred in the whole screen (there is no header on this page) */
 .waiting-center .hero { padding-top: 0; }
 
 /* ---- Floating bottom navigation: My Orders / Pay ------------------------- */
@@ -231,6 +231,5 @@ label[for="pin"] { text-align: center; }
 
 /* ---- Waiting page: full logo, message, table pill ---- */
 .waiting-logo { display: block; width: min(240px, 62.4vw); height: auto; margin: 0 auto 6px; } /* 80% of the previous 300px / 78vw */
-.waiting-center .hero h2 { margin: 14px 0 12px; }
-.chip.chip-lg { padding: 8px 20px; font-size: 17px; }
+.waiting-center .hero h2 { margin: 14px 0 0; }
 .waiting-center .checking { margin-top: 16px; }
