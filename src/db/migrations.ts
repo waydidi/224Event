@@ -416,6 +416,18 @@ const infinityDetails = `
 UPDATE menu_items SET description = ${q(infinityStory)}, ingredients = ${q(JSON.stringify(infinityIngredients))} WHERE code = 'ken-infinity';
 `;
 
+// 33: story and ingredient names supplied by the bar.
+const ken33Story = [
+  'Somewhere between what has passed and what has yet to begin, there is a moment that belongs to neither.',
+  'Thirty-three is a number without an explanation, a quiet pause in the middle of a longer story. Rice meets leaf; softness meets clarity. The gentle depth of sake unfolds into the delicate green and tropical notes of sencha.',
+  'Nothing is hurried. Nothing asks to be more than it is.',
+  'A study in stillness, balance, and the beauty of the in-between.',
+].join('\n\n');
+const ken33Ingredients = ['Bijofu Tokubetsu Junmai', 'Newby Oriental Sencha', 'Sea salt', 'Wild honey'];
+const ken33Details = `
+UPDATE menu_items SET description = ${q(ken33Story)}, ingredients = ${q(JSON.stringify(ken33Ingredients))} WHERE code = 'ken-33';
+`;
+
 export const migrations: Migration[] = [
   { version: 1, name: 'schema', sql: schema },
   { version: 2, name: 'seed_menu', sql: seedMenu },
@@ -440,4 +452,5 @@ export const migrations: Migration[] = [
   { version: 17, name: 'mystery_photo', sql: mysteryPhoto },
   { version: 18, name: 'launch_prices', sql: launchPrices },
   { version: 19, name: 'infinity_details', sql: infinityDetails },
+  { version: 20, name: 'ken_33_details', sql: ken33Details },
 ];

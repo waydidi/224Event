@@ -97,6 +97,10 @@ describe('reliability & security', () => {
       const it = menu.data.categories[0].items.find((i: any) => i.name === n);
       for (const u of [it.imageUrl, it.thumbUrl, it.fullUrl]) assert.equal((await http(env, 'GET', u)).status, 200);
     }
+    const k33 = menu.data.categories[0].items.find((i: any) => i.name === '33');
+    assert.match(k33.description, /^Somewhere between what has passed/);
+    assert.match(k33.description, /beauty of the in-between\.$/);
+    assert.deepEqual(k33.ingredients, ['Bijofu Tokubetsu Junmai', 'Newby Oriental Sencha', 'Sea salt', 'Wild honey']);
     const inf = menu.data.categories[0].items.find((i: any) => i.name === 'Infinity');
     assert.match(inf.description, /^We mistake endings for disappearance\.\n\n/);
     assert.match(inf.description, /sweetness and desire\.$/);
