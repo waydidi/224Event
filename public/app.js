@@ -18,7 +18,8 @@
     menu: null,
     view: 'loading', // waiting | join | main | ended | error | landing
     tab: 'menu', // menu | orders | bill
-    category: 0,
+    spy: 'all', // highlighted category pill: 'all' or a category code
+    menuScroll: 0,
     cart: new Map(), // menuItemId -> qty
     notes: '',
     showCart: false,
@@ -372,6 +373,7 @@
     const t = e.target;
     const isPage = t === document;
     if (!isPage && !(t.classList && t.classList.contains('phone-scroll'))) return; // ignore scrolling inside text boxes and the pill row
+    scheduleSpy();
     const y = Math.max(0, isPage ? document.scrollingElement.scrollTop : t.scrollTop);
     const dy = y - lastScrollY;
     if (Math.abs(dy) < 6) return; // ignore tiny movements
@@ -478,6 +480,7 @@
     return el;
   }
   function openDetail(id) {
+    rememberMenuScroll();
     state.detailId = id;
     state.detailQty = 1;
     state.detailNote = '';
@@ -490,6 +493,7 @@
     state.detailId = null;
     if (!viaHistory && state.detailPushed) { state.detailPushed = false; try { history.back(); } catch { /* ignore */ } }
     render();
+    restoreMenuScroll();
   }
   window.addEventListener('popstate', () => closeDetail(true));
 
@@ -541,22 +545,91 @@
         } }, label || `Add to Cart (${baht(item.priceSatang * qty)})`))))];
   }
 
+  // ---------- menu: category pills follow the scroll ----------
+  const scroller = () => document.querySelector('.phone-scroll') || document.scrollingElement;
+  const reduceMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const pillsBottom = () => { const w = $app.querySelector('.tabs-wrap'); return w ? w.getBoundingClientRect().bottom : 0; };
+  let spyLockUntil = 0;
+  let spyFrame = 0;
+
+  /** The pill that matches the scroll position: the last class whose heading has reached the pills; "All" before the first one. */
+  function currentSection() {
+    const secs = [...$app.querySelectorAll('.cat')];
+    if (!secs.length) return null;
+    const line = pillsBottom() + 14;
+    let active = 'all';
+    for (const sec of secs) if (sec.querySelector('.cat-title').getBoundingClientRect().top <= line) active = sec.dataset.cat;
+    const sc = scroller();
+    const atBottom = sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 2;
+    if (atBottom && sc.scrollTop > 0 && sc.scrollHeight > sc.clientHeight + 40) active = secs[secs.length - 1].dataset.cat; // a short last class still lights up at the very end
+    return active;
+  }
+
+  function markPill(code) {
+    state.spy = code;
+    for (const b of $app.querySelectorAll('.tabs [data-pill]')) {
+      if (b.dataset.pill === code) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current');
+    }
+  }
+  function centerPill() {
+    const row = $app.querySelector('.tabs');
+    const on = row && row.querySelector('[aria-current="true"]');
+    if (on) row.scrollTo({ left: Math.max(0, on.offsetLeft - (row.clientWidth - on.offsetWidth) / 2), behavior: reduceMotion() ? 'auto' : 'smooth' });
+  }
+  const highlightPill = (code) => { markPill(code); centerPill(); };
+
+  function syncPills() {
+    spyFrame = 0;
+    if (performance.now() < spyLockUntil) return; // a tapped pill is still scrolling into place
+    const code = currentSection();
+    if (code && code !== state.spy) highlightPill(code);
+  }
+  const scheduleSpy = () => { if (!spyFrame) spyFrame = requestAnimationFrame(syncPills); };
+
+  /** A pill jumps to its class in the list ("All" goes back to the top). */
+  function jumpTo(code) {
+    const sc = scroller();
+    let top = 0;
+    if (code !== 'all') {
+      const title = $app.querySelector(`.cat[data-cat="${code}"] .cat-title`);
+      if (!title) return;
+      top = Math.max(0, sc.scrollTop + title.getBoundingClientRect().top - pillsBottom() - 6);
+    }
+    highlightPill(code);
+    spyLockUntil = performance.now() + 900; // no flicker through the classes in between
+    sc.scrollTo({ top, behavior: reduceMotion() ? 'auto' : 'smooth' });
+    setTimeout(syncPills, 950);
+  }
+
+  // Leaving the list for a cocktail or the cart and coming back lands you where you were.
+  const rememberMenuScroll = () => { state.menuScroll = scroller().scrollTop; };
+  function restoreMenuScroll() {
+    lastScrollY = state.menuScroll; // so the restore itself doesn't hide the bottom bar
+    scroller().scrollTop = state.menuScroll;
+    const code = currentSection();
+    if (code) highlightPill(code);
+  }
+
   function viewMenu() {
     const st = state.status;
     if (!state.menu) return [h('div', { class: 'center-screen' }, h('div', { class: 'spinner', 'aria-label': 'Loading menu' }))];
     const enabled = st.orderingEnabled && state.menu.orderingEnabled;
     const cats = state.menu.categories;
-    const cat = cats[state.category] || cats[0];
-    const tabs = h('div', { class: 'tabs', role: 'tablist' }, cats.map((c, i) =>
-      h('button', { type: 'button', role: 'tab', 'aria-selected': i === state.category ? 'true' : 'false', onclick: () => { state.category = i; state.revealTab = true; render(); } }, c.name)));
+    // One long list with a heading per class. The pills (sticky) follow the scroll, and a tap jumps to a class.
+    const pills = [{ code: 'all', name: 'All' }, ...cats];
+    const tabs = h('div', { class: 'tabs-wrap' }, h('nav', { class: 'tabs', 'aria-label': 'Menu categories' }, pills.map((c) =>
+      h('button', { type: 'button', 'data-pill': c.code, 'aria-current': c.code === state.spy ? 'true' : null, onclick: () => jumpTo(c.code) }, c.name))));
+    const sections = cats.map((c) => h('section', { class: 'cat', 'data-cat': c.code, 'aria-labelledby': `cat-${c.code}` },
+      h('h2', { class: 'cat-title', id: `cat-${c.code}` }, c.name),
+      h('div', { class: 'items' }, c.items.map((i) => itemCard(i, enabled)))));
     const notice = !state.menu.orderingEnabled
       ? h('div', { class: 'alert' }, 'Ordering opens soon — our prices are being finalised. Please ask staff.')
       : st.session.status === 'PAYMENT_REQUESTED' ? h('div', { class: 'alert' }, 'Payment has been requested, so new orders are paused.') : null;
     const count = cartCount();
     return [
       tabs, notice, flash(),
-      h('section', { class: 'section', role: 'tabpanel', 'aria-label': cat.name }, h('div', { class: 'items' }, cat.items.map((i) => itemCard(i, enabled)))),
-      count ? h('div', { class: 'cta-bar' }, h('button', { class: 'btn', type: 'button', onclick: () => { state.showCart = true; state.flash = null; render(); scrollTo(0, 0); } },
+      h('div', { class: 'section menu-sections' }, sections),
+      count ? h('div', { class: 'cta-bar' }, h('button', { class: 'btn', type: 'button', onclick: () => { rememberMenuScroll(); state.showCart = true; state.flash = null; render(); scrollTo(0, 0); } },
         h('span', {}, `View Cart · ${count} item${count > 1 ? 's' : ''}`), h('span', { class: 'spread' }, baht(cartTotal())))) : null,
     ];
   }
@@ -578,7 +651,7 @@
       h('div', { class: 'cta-bar' }, h('div', { class: 'btn-row' },
         h('button', { class: 'btn', type: 'button', disabled: !lines.length || state.busy || !state.status.orderingEnabled, onclick: placeOrder },
           state.busy ? 'Sending to the bar…' : h('span', {}, 'Place Order'), state.busy ? null : h('span', { class: 'spread' }, baht(cartTotal()))),
-        h('button', { class: 'btn ghost', type: 'button', onclick: () => { state.showCart = false; state.flash = null; render(); } }, 'Keep browsing'))),
+        h('button', { class: 'btn ghost', type: 'button', onclick: () => { state.showCart = false; state.flash = null; render(); restoreMenuScroll(); } }, 'Keep browsing'))),
     ];
   }
 
@@ -681,11 +754,10 @@
     const tabs = document.querySelector('.tabs');
     if (tabs) {
       tabs.scrollLeft = tabsScroll;
-      if (state.revealTab) {
-        state.revealTab = false;
-        tabs.querySelector('[aria-selected="true"]')?.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' });
-      }
     }
+    const hd = $app.querySelector('.header');
+    if (hd) $app.style.setProperty('--header-h', `${hd.offsetHeight}px`); // the pill row sticks right under the header
+    if ($app.querySelector('.cat') && performance.now() >= spyLockUntil) { const code = currentSection(); if (code) markPill(code); }
     $app.setAttribute('aria-busy', 'false');
     if (focusId) {
       const el = document.getElementById(focusId);
