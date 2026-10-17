@@ -5,7 +5,7 @@ import { currentBillView, reopenBill } from '../domain/billing.ts';
 import { getMenu, menuReadiness, setAvailability } from '../domain/menu.ts';
 import { markServed } from '../domain/orders.ts';
 import { confirmPayment } from '../domain/payments.ts';
-import { can, findActiveStaff, type Permission, type StaffRow } from '../domain/staff.ts';
+import { can, findActiveStaff, upsertStaff, type Permission, type StaffRow } from '../domain/staff.ts';
 import { getActiveSession, getTableByNumber, listTables, openSession, rotatePin, voidSession } from '../domain/tables.ts';
 import { AppError } from '../lib/errors.ts';
 import { escapeHtml } from '../lib/html.ts';
@@ -40,6 +40,19 @@ const roleHint: Record<Permission, string> = {
 
 const isStaffChat = (ctx: Ctx, chatId: number | undefined) => chatId !== undefined && String(chatId) === ctx.config.telegram.staffChatId;
 
+/**
+ * The staff member behind a message in the staff group. When the venue lets every group member act as a
+ * cashier, unknown members are registered on first use (so audit entries still carry their name);
+ * anyone staff explicitly deactivated stays blocked.
+ */
+function staffFor(ctx: Ctx, from: TgUser): StaffRow | undefined {
+  const known = findActiveStaff(ctx.db, from.id);
+  if (known || !ctx.config.telegram.groupMembersAreCashiers) return known;
+  if (ctx.db.get('SELECT 1 AS x FROM staff WHERE telegram_user_id = ?', [String(from.id)])) return undefined;
+  upsertStaff(ctx, String(from.id), from.first_name || from.username || `Staff ${from.id}`, 'cashier', true);
+  return findActiveStaff(ctx.db, from.id);
+}
+
 function reply(ctx: Ctx, chatId: number, text: string, replyTo?: number) {
   ctx.db.tx(() => enqueue(ctx, 'telegram.text', { chatId: String(chatId), text, replyTo }));
   ctx.kick();
@@ -67,7 +80,7 @@ async function handleCallback(ctx: Ctx, tg: TelegramClient, cq: TgCallbackQuery)
 
   const action = findAction(ctx.db, m[1]);
   if (!action) return answer('This button is no longer valid.', true);
-  const staff = findActiveStaff(ctx.db, cq.from.id);
+  const staff = staffFor(ctx, cq.from);
   const permission = actionPermission[action.action];
   if (!can(staff, permission)) {
     ctx.db.tx(() =>
@@ -143,7 +156,7 @@ function handleCommand(ctx: Ctx, msg: TgMessage) {
     if (cmd === '/start' || cmd === '/help') reply(ctx, msg.chat.id, 'This bot is for 224 Live House staff. Use /whoami to get your user ID for registration.');
     return;
   }
-  const staff = findActiveStaff(ctx.db, from.id);
+  const staff = staffFor(ctx, from);
   const need = (p: Permission): StaffRow => {
     if (!can(staff, p)) {
       ctx.db.tx(() => audit(ctx, staff ? { type: 'staff', staff } : { type: 'unknown', telegramUserId: String(from.id) }, 'telegram.unauthorized', 'command', null, { cmd }));

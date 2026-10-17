@@ -24,7 +24,9 @@
   "vars": {
     "PUBLIC_BASE_URL": "https://orders.224livehouse.com",
     "DISPLAY_TIMEZONE": "Asia/Bangkok",
-    "VENUE_NAME": "224 LIVE HOUSE"
+    "VENUE_NAME": "224 LIVE HOUSE",
+    // Everyone in the staff group can open tables and confirm payments (registered automatically on first tap).
+    "TELEGRAM_GROUP_MEMBERS_ARE_CASHIERS": "true"
   },
 
   "observability": { "enabled": true }

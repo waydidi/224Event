@@ -196,6 +196,24 @@ describe('reliability & security', () => {
     assert.equal((await scan()).data.notified, true);
   });
 
+  test('group-wide access: anyone in the staff group can open tables and confirm payments; others cannot', async () => {
+    const e = (env = await setup({ env: { TELEGRAM_GROUP_MEMBERS_ARE_CASHIERS: 'true' } }));
+    const newcomer = 4444;
+    const say = (from: number, text: string, chat = '-100777') => e.app.ctx.db && command(e, from, text, chat);
+    await say(newcomer, '/open_table 3');
+    assert.equal(e.tg.sent((t) => t.includes('TABLE 3 OPENED')).length, 1);
+    const staff = e.app.ctx.db.get<{ role: string; active: number }>('SELECT * FROM staff WHERE telegram_user_id = ?', ['4444'])!;
+    assert.deepEqual([staff.role, staff.active], ['cashier', 1]);
+    // Outside the staff group nothing is granted, and no one is registered.
+    await say(5555, '/open_table 4', '-100999');
+    assert.equal(e.tg.sent((t) => t.includes('TABLE 4 OPENED')).length, 0);
+    assert.equal(e.app.ctx.db.get('SELECT 1 AS x FROM staff WHERE telegram_user_id = ?', ['5555']), undefined);
+    // Staff that were explicitly deactivated stay blocked.
+    e.app.ctx.db.run("UPDATE staff SET active = 0 WHERE telegram_user_id = '4444'");
+    await say(newcomer, '/open_table 4');
+    assert.equal(e.tg.sent((t) => t.includes('TABLE 4 OPENED')).length, 0);
+  });
+
   test('PIN brute force locks the session until staff issues a new PIN', async () => {
     env = await setup({ env: { PIN_MAX_FAILED_ATTEMPTS: '3' } });
     const s = await openTable(env, 1);

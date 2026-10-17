@@ -12,6 +12,8 @@ export interface Config {
     staffChatId: string;
     webhookSecret: string;
     apiBase: string;
+    /** Anyone who acts inside the staff group is treated as a cashier (auto-registered on first use). */
+    groupMembersAreCashiers: boolean;
   };
   internalApiToken: string;
   venue: {
@@ -85,6 +87,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, overrides: Part
       staffChatId: (env.TELEGRAM_STAFF_CHAT_ID || '').trim(),
       webhookSecret: env.TELEGRAM_WEBHOOK_SECRET || '',
       apiBase: (env.TELEGRAM_API_BASE || 'https://api.telegram.org').replace(/\/+$/, ''),
+      groupMembersAreCashiers: bool(env.TELEGRAM_GROUP_MEMBERS_ARE_CASHIERS, false),
     },
     internalApiToken: env.INTERNAL_API_TOKEN || '',
     venue: {

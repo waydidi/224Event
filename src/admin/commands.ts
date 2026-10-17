@@ -179,7 +179,7 @@ export function adminCommands({ ctx, tg, out, fail }: AdminEnv): Record<string, 
       if (!config.telegram.webhookSecret) problems.push('TELEGRAM_WEBHOOK_SECRET not set');
       if (!config.publicBaseUrl.startsWith('https://')) problems.push('PUBLIC_BASE_URL is not https://');
       const cashiers = db.get<{ c: number }>("SELECT COUNT(*) AS c FROM staff WHERE active = 1 AND role IN ('cashier','lead')")!.c;
-      if (!cashiers) problems.push('No active cashier/lead staff');
+      if (!cashiers && !config.telegram.groupMembersAreCashiers) problems.push('No active cashier/lead staff');
       if (problems.length) {
         out('NOT READY:\n- ' + problems.join('\n- '));
         fail();
