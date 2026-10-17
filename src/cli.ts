@@ -7,19 +7,20 @@ import PDFDocument from 'pdfkit';
 import QRCode from 'qrcode';
 import { loadConfig } from './config.ts';
 import type { Ctx } from './context.ts';
-import { Database } from './db/database.ts';
+import { NodeDatabase } from './db/node-engine.ts';
 import { getMenu, menuReadiness, setPrice, updateItemDetails } from './domain/menu.ts';
 import { upsertStaff, type Role } from './domain/staff.ts';
 import { ensureTables, listTables } from './domain/tables.ts';
 import { consoleLogger } from './lib/log.ts';
 import { formatBaht, parseBaht } from './lib/money.ts';
+import { nodeReceiptAssets } from './receipts/assets-node.ts';
 import { generateReceipt } from './receipts/service.ts';
 import { HttpTelegramClient } from './telegram/api.ts';
 
 const config = loadConfig();
-const db = new Database(config.databasePath);
+const db = new NodeDatabase(config.databasePath);
 db.migrate();
-const ctx: Ctx = { config, db, log: consoleLogger, now: () => new Date(), kick: () => {} };
+const ctx: Ctx = { config, db, log: consoleLogger, now: () => new Date(), receiptAssets: nodeReceiptAssets(config), kick: () => {} };
 const tg = new HttpTelegramClient(config.telegram.apiBase, config.telegram.botToken);
 
 const tableUrl = (token: string) => `${config.publicBaseUrl}/t/${token}`;

@@ -1,5 +1,3 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import PDFDocument from 'pdfkit';
 import { formatAmount } from '../lib/money.ts';
 import { formatDate, formatTime } from '../lib/time.ts';
@@ -7,13 +5,13 @@ import { code128B } from './code128.ts';
 import type { ReceiptData } from './model.ts';
 
 const MM = 72 / 25.4;
-const FONT_DIR = path.resolve(import.meta.dirname, '../../assets/fonts');
-const FONTS = {
-  regular: path.join(FONT_DIR, 'Inter-Regular.otf'),
-  medium: path.join(FONT_DIR, 'Inter-Medium.otf'),
-  bold: path.join(FONT_DIR, 'Inter-Bold.otf'),
-};
-type Font = keyof typeof FONTS;
+export type FontName = 'regular' | 'medium' | 'bold';
+/** Font and logo bytes (or file paths on Node) used to draw receipts. */
+export interface ReceiptAssets {
+  fonts: Record<FontName, Uint8Array | string>;
+  logo?: Uint8Array | string;
+}
+type Font = FontName;
 
 const INK = '#000000';
 const SOFT = '#3a3a3a'; // secondary text: still dark enough for thermal heads
@@ -67,8 +65,8 @@ interface Op {
   draw: (doc: PDFKit.PDFDocument, y: number) => void;
 }
 
-function registerFonts(doc: PDFKit.PDFDocument) {
-  for (const [name, file] of Object.entries(FONTS)) doc.registerFont(name, file);
+function registerFonts(doc: PDFKit.PDFDocument, assets: ReceiptAssets) {
+  for (const [name, src] of Object.entries(assets.fonts)) doc.registerFont(name, src as string);
 }
 
 /**
@@ -76,7 +74,7 @@ function registerFonts(doc: PDFKit.PDFDocument) {
  * slip: logo, venue name and address, info block, itemised lines, total,
  * payment status and a Code 128 barcode of the receipt number.
  */
-export async function renderReceiptPdf(d: ReceiptData): Promise<Buffer> {
+export async function renderReceiptPdf(d: ReceiptData, assets: ReceiptAssets): Promise<Uint8Array> {
   const k = d.widthMm === 80 ? 1 : 0.78; // type scale for 58 mm rolls
   const pageWidth = d.widthMm * MM;
   const printable = (d.widthMm === 80 ? 72 : 48) * MM;
@@ -87,7 +85,7 @@ export async function renderReceiptPdf(d: ReceiptData): Promise<Buffer> {
 
   // A scratch document for measuring text before the page height is known.
   const m = new PDFDocument({ size: [pageWidth, 1000], margin: 0 });
-  registerFonts(m);
+  registerFonts(m, assets);
   const textHeight = (text: string, font: Font, fontSize: number, width = W) => m.font(font).fontSize(fontSize).heightOfString(text, { width, lineGap: 0 });
   const widthOf = (text: string, font: Font, fontSize: number) => m.font(font).fontSize(fontSize).widthOfString(text);
 
@@ -122,8 +120,8 @@ export async function renderReceiptPdf(d: ReceiptData): Promise<Buffer> {
   ops.push({
     height: logoSize,
     draw: (doc, y) => {
-      if (d.logoPath && fs.existsSync(d.logoPath)) {
-        doc.image(d.logoPath, x0, y, { fit: [W, logoSize], align: 'center', valign: 'center' });
+      if (assets.logo) {
+        doc.image(assets.logo as string, x0, y, { fit: [W, logoSize], align: 'center', valign: 'center' });
         return;
       }
       // Default mark until the venue's own logo file is configured.
@@ -232,11 +230,16 @@ export async function renderReceiptPdf(d: ReceiptData): Promise<Buffer> {
     margin: 0,
     info: { Title: `Receipt ${d.receiptNumber}`, Author: d.venueName, CreationDate: new Date(d.paidAt) },
   });
-  registerFonts(doc);
-  const chunks: Buffer[] = [];
-  doc.on('data', (c: Buffer) => chunks.push(c));
-  const done = new Promise<Buffer>((resolve, reject) => {
-    doc.on('end', () => resolve(Buffer.concat(chunks)));
+  registerFonts(doc, assets);
+  const chunks: Uint8Array[] = [];
+  doc.on('data', (c: Uint8Array) => chunks.push(c));
+  const done = new Promise<Uint8Array>((resolve, reject) => {
+    doc.on('end', () => {
+      const out = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
+      let off = 0;
+      for (const c of chunks) { out.set(c, off); off += c.length; }
+      resolve(out);
+    });
     doc.on('error', reject);
   });
   let y = top;

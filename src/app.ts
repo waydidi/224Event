@@ -1,8 +1,10 @@
 import type { Config } from './config.ts';
 import type { Ctx } from './context.ts';
-import { Database } from './db/database.ts';
+import type { Database } from './db/database.ts';
+import { NodeDatabase } from './db/node-engine.ts';
 import { createHttpServer } from './http/server.ts';
 import { consoleLogger, type Logger } from './lib/log.ts';
+import { nodeReceiptAssets } from './receipts/assets-node.ts';
 import { OutboxWorker } from './outbox/worker.ts';
 import { HttpTelegramClient, type TelegramClient } from './telegram/api.ts';
 
@@ -15,7 +17,7 @@ export interface App {
 }
 
 export function createApp(config: Config, opts: { telegram?: TelegramClient; log?: Logger; now?: () => Date; db?: Database } = {}): App {
-  const db = opts.db ?? new Database(config.databasePath);
+  const db = opts.db ?? new NodeDatabase(config.databasePath);
   db.migrate();
   const telegram = opts.telegram ?? new HttpTelegramClient(config.telegram.apiBase, config.telegram.botToken);
   let worker: OutboxWorker | undefined;
@@ -24,6 +26,7 @@ export function createApp(config: Config, opts: { telegram?: TelegramClient; log
     db,
     log: opts.log ?? consoleLogger,
     now: opts.now ?? (() => new Date()),
+    receiptAssets: nodeReceiptAssets(config),
     kick: () => worker?.kick(),
   };
   worker = new OutboxWorker(ctx, telegram);

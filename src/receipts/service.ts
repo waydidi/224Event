@@ -1,14 +1,8 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import type { Ctx } from '../context.ts';
 import { audit } from '../domain/audit.ts';
 import { enqueue } from '../outbox/outbox.ts';
 import { loadReceiptData, type ReceiptRow } from './model.ts';
 import { renderReceiptPdf } from './pdf.ts';
-
-export function receiptsDir(ctx: Ctx) {
-  return path.join(ctx.config.dataDir, 'receipts');
-}
 
 export function getReceipt(ctx: Ctx, id: number) {
   return ctx.db.get<ReceiptRow>('SELECT * FROM receipts WHERE id = ?', [id]);
@@ -23,14 +17,10 @@ export async function generateReceipt(ctx: Ctx, receiptId: number, opts: { send:
   if (!receipt) throw new Error(`Receipt ${receiptId} not found`);
   ctx.db.run('UPDATE receipts SET generation_attempts = generation_attempts + 1 WHERE id = ?', [receiptId]);
   const data = loadReceiptData(ctx.db, ctx.config, receipt);
-  const pdf = await renderReceiptPdf(data);
+  const pdf = await renderReceiptPdf(data, ctx.receiptAssets);
   const key = receipt.pdf_storage_key ?? `${receipt.receipt_number}-${receipt.lookup_token.slice(0, 8)}.pdf`;
-  const dir = receiptsDir(ctx);
-  fs.mkdirSync(dir, { recursive: true });
-  const tmp = path.join(dir, `${key}.tmp`);
-  fs.writeFileSync(tmp, pdf);
-  fs.renameSync(tmp, path.join(dir, key));
   ctx.db.tx(() => {
+    ctx.db.run('INSERT INTO receipt_files(storage_key, data, created_at) VALUES (?, ?, ?) ON CONFLICT(storage_key) DO UPDATE SET data = excluded.data, created_at = excluded.created_at', [key, pdf, ctx.now().toISOString()]);
     ctx.db.run('UPDATE receipts SET pdf_storage_key = ?, generated_at = ? WHERE id = ?', [key, ctx.now().toISOString(), receiptId]);
     audit(ctx, { type: 'system' }, receipt.generated_at ? 'receipt.regenerate' : 'receipt.generate', 'receipt', receiptId, { receiptNumber: receipt.receipt_number });
     if (opts.send) enqueue(ctx, 'telegram.receipt_document', { receiptId }, `receipt:send:${receiptId}`);
@@ -39,8 +29,8 @@ export async function generateReceipt(ctx: Ctx, receiptId: number, opts: { send:
   return { key, bytes: pdf.length };
 }
 
-export function readReceiptPdf(ctx: Ctx, receipt: ReceiptRow): Buffer | null {
+export function readReceiptPdf(ctx: Ctx, receipt: ReceiptRow): Uint8Array | null {
   if (!receipt.pdf_storage_key) return null;
-  const file = path.join(receiptsDir(ctx), path.basename(receipt.pdf_storage_key));
-  return fs.existsSync(file) ? fs.readFileSync(file) : null;
+  const row = ctx.db.get<{ data: Uint8Array }>('SELECT data FROM receipt_files WHERE storage_key = ?', [receipt.pdf_storage_key]);
+  return row ? new Uint8Array(row.data) : null;
 }

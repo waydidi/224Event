@@ -270,7 +270,7 @@ describe('224 Live House acceptance (spec §13)', () => {
     // PDF was sent to the staff group exactly once, and is downloadable by the guest.
     assert.equal(env.tg.documents.length, 1);
     assert.equal(env.tg.documents[0].filename, 'R-000001.pdf');
-    assert.equal(env.tg.documents[0].data.subarray(0, 5).toString(), '%PDF-');
+    assert.equal(Buffer.from(env.tg.documents[0].data).subarray(0, 5).toString(), '%PDF-');
     const st = await http(env, 'GET', '/api/public/session/status', undefined, auth(tokenA));
     const pdf = await http(env, 'GET', st.data.receipt.url);
     assert.equal(pdf.status, 200);

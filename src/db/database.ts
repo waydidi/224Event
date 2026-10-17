@@ -1,44 +1,50 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
 import { migrations } from './migrations.ts';
 
-export type Params = Record<string, SQLInputValue> | SQLInputValue[];
+export type Param = string | number | bigint | null | Uint8Array;
+export type Params = Param[];
 export type Row = Record<string, any>;
 
+/** What a SQLite backend (node:sqlite locally, a Durable Object's SQLite on Cloudflare) must provide. */
+export interface Engine {
+  exec(sql: string): void;
+  run(sql: string, params: Params): { changes: number | bigint; lastInsertRowid: number | bigint };
+  all(sql: string, params: Params): Row[];
+  /** Run fn atomically; throwing rolls everything back. fn must be synchronous. */
+  transaction<T>(fn: () => T): T;
+  close(): void;
+}
+
 /**
- * Thin synchronous wrapper around node:sqlite.
+ * Thin synchronous wrapper around an Engine.
  *
  * SQLite runs in-process and every statement is synchronous, so a transaction
- * started with BEGIN IMMEDIATE holds the write lock for its whole (synchronous)
- * body: payment request, payment confirmation and session rollover are fully
- * serialized without explicit row locks.
+ * holds the write lock for its whole (synchronous) body: payment request,
+ * payment confirmation and session rollover are fully serialized without
+ * explicit row locks. On Cloudflare a Durable Object is single-threaded, which
+ * gives the same guarantee.
  */
 export class Database {
-  readonly raw: DatabaseSync;
+  private readonly engine: Engine;
   private depth = 0;
 
-  constructor(file: string) {
-    if (file !== ':memory:') fs.mkdirSync(path.dirname(file), { recursive: true });
-    this.raw = new DatabaseSync(file);
-    this.raw.exec('PRAGMA foreign_keys = ON');
-    this.raw.exec('PRAGMA busy_timeout = 5000');
-    if (file !== ':memory:') this.raw.exec('PRAGMA journal_mode = WAL');
+  constructor(engine: Engine) {
+    this.engine = engine;
   }
 
   run(sql: string, params: Params = []) {
-    const stmt = this.raw.prepare(sql);
-    return Array.isArray(params) ? stmt.run(...params) : stmt.run(params);
+    return this.engine.run(sql, params);
   }
 
   get<T = Row>(sql: string, params: Params = []): T | undefined {
-    const stmt = this.raw.prepare(sql);
-    return (Array.isArray(params) ? stmt.get(...params) : stmt.get(params)) as T | undefined;
+    return this.engine.all(sql, params)[0] as T | undefined;
   }
 
   all<T = Row>(sql: string, params: Params = []): T[] {
-    const stmt = this.raw.prepare(sql);
-    return (Array.isArray(params) ? stmt.all(...params) : stmt.all(params)) as T[];
+    return this.engine.all(sql, params) as T[];
+  }
+
+  exec(sql: string) {
+    this.engine.exec(sql);
   }
 
   /** Run fn inside a write transaction. Nested calls join the outer transaction. */
@@ -51,15 +57,9 @@ export class Database {
         this.depth--;
       }
     }
-    this.raw.exec('BEGIN IMMEDIATE');
     this.depth = 1;
     try {
-      const result = fn();
-      this.raw.exec('COMMIT');
-      return result;
-    } catch (err) {
-      this.raw.exec('ROLLBACK');
-      throw err;
+      return this.engine.transaction(fn);
     } finally {
       this.depth = 0;
     }
@@ -73,13 +73,13 @@ export class Database {
   }
 
   migrate(): number {
-    this.raw.exec('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)');
+    this.exec('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)');
     const applied = new Set(this.all<{ version: number }>('SELECT version FROM schema_migrations').map((r) => r.version));
     let count = 0;
     for (const m of migrations) {
       if (applied.has(m.version)) continue;
       this.tx(() => {
-        this.raw.exec(m.sql);
+        this.exec(m.sql);
         this.run('INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)', [m.version, new Date().toISOString()]);
       });
       count++;
@@ -88,6 +88,6 @@ export class Database {
   }
 
   close() {
-    this.raw.close();
+    this.engine.close();
   }
 }

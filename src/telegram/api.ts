@@ -8,7 +8,7 @@ export interface InlineButton {
 export interface TelegramClient {
   readonly configured: boolean;
   call<T = any>(method: string, params: Record<string, unknown>): Promise<T>;
-  sendDocument(chatId: string, filename: string, data: Buffer, caption: string): Promise<{ message_id: number }>;
+  sendDocument(chatId: string, filename: string, data: Uint8Array, caption: string): Promise<{ message_id: number }>;
 }
 
 export class TelegramError extends Error {
@@ -52,7 +52,7 @@ export class HttpTelegramClient implements TelegramClient {
     return this.post<T>(method, JSON.stringify(params), { 'content-type': 'application/json' });
   }
 
-  sendDocument(chatId: string, filename: string, data: Buffer, caption: string) {
+  sendDocument(chatId: string, filename: string, data: Uint8Array, caption: string) {
     const form = new FormData();
     form.set('chat_id', chatId);
     form.set('caption', caption);

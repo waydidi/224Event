@@ -4,7 +4,7 @@ import path from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { createApp, type App } from '../src/app.ts';
 import { loadConfig, type Config } from '../src/config.ts';
-import { Database } from '../src/db/database.ts';
+import { NodeDatabase } from '../src/db/node-engine.ts';
 import { setPrice } from '../src/domain/menu.ts';
 import { upsertStaff } from '../src/domain/staff.ts';
 import { ensureTables } from '../src/domain/tables.ts';
@@ -18,7 +18,7 @@ export const USERS = { server: 1001, cashier: 2002, lead: 3003, stranger: 9999 }
 export class FakeTelegram implements TelegramClient {
   readonly configured = true;
   calls: { method: string; params: any }[] = [];
-  documents: { chatId: string; filename: string; data: Buffer; caption: string }[] = [];
+  documents: { chatId: string; filename: string; data: Uint8Array; caption: string }[] = [];
   failing = false;
   private nextId = 100;
 
@@ -29,7 +29,7 @@ export class FakeTelegram implements TelegramClient {
     return true as any;
   }
 
-  async sendDocument(chatId: string, filename: string, data: Buffer, caption: string) {
+  async sendDocument(chatId: string, filename: string, data: Uint8Array, caption: string) {
     if (this.failing) throw new TelegramError('sendDocument', 502, 'Bad Gateway');
     this.documents.push({ chatId, filename, data, caption });
     return { message_id: this.nextId++ };
@@ -81,7 +81,7 @@ export async function setup(opts: { prices?: boolean; env?: Record<string, strin
   });
   const clock = { t: Date.parse('2026-10-16T13:00:00.000Z') };
   const tg = new FakeTelegram();
-  const app = createApp(config, { telegram: tg, log: silentLogger, now: () => new Date(clock.t), db: new Database(':memory:') });
+  const app = createApp(config, { telegram: tg, log: silentLogger, now: () => new Date(clock.t), db: new NodeDatabase(':memory:') });
   const ctx = app.ctx;
   const tables = ensureTables(ctx, 3);
   upsertStaff(ctx, String(USERS.server), 'Mali (server)', 'server');

@@ -482,6 +482,15 @@ WHERE code NOT IN ('the-morning-light', 'naoko', 'the-basket-case', 'ken-224', '
 
 const rename33 = `UPDATE menu_items SET name = '33 三三' WHERE code = 'ken-33';`;
 
+// Receipt PDFs live in the database (works the same on Node and on Cloudflare Durable Objects, and is covered by backups).
+const receiptFiles = `
+CREATE TABLE IF NOT EXISTS receipt_files (
+  storage_key TEXT PRIMARY KEY,
+  data        BLOB NOT NULL,
+  created_at  TEXT NOT NULL
+);
+`;
+
 export const migrations: Migration[] = [
   { version: 1, name: 'schema', sql: schema },
   { version: 2, name: 'seed_menu', sql: seedMenu },
@@ -520,4 +529,5 @@ export const migrations: Migration[] = [
   { version: 31, name: 'mojito_photo', sql: mojitoPhoto },
   { version: 32, name: 'clear_unsupplied_details', sql: clearUnsupplied },
   { version: 33, name: 'rename_33', sql: rename33 },
+  { version: 34, name: 'receipt_files', sql: receiptFiles },
 ];
