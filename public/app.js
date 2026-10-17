@@ -515,7 +515,7 @@
     return [h('div', { class: 'detail' },
       h('div', { class: 'detail-hero' },
         item.imageUrl
-          ? [h('img', { class: 'hero-bg', src: item.imageUrl, alt: '', 'aria-hidden': 'true' }), h('img', { class: 'hero-img', src: item.imageUrl, alt: item.name })]
+          ? h('img', { class: 'hero-img', src: item.imageUrl, alt: item.name })
           : svg([['path', { d: 'M4 4h16l-8 9z' }], ['path', { d: 'M12 13v7M8 20.5h8' }], ['circle', { cx: 17.5, cy: 5.5, r: 1.6 }]], 'hero-glass'),
         h('button', { type: 'button', class: 'detail-back', 'aria-label': 'Back to menu', onclick: () => closeDetail(false) },
           svg([['path', { d: 'M19 12H5M11 6l-6 6 6 6' }]]))),
