@@ -402,6 +402,20 @@ UPDATE menu_items SET price_satang = CASE (SELECT code FROM menu_categories c WH
 WHERE price_satang IS NULL;
 `;
 
+// Infinity: story and ingredient names supplied by the bar.
+const infinityStory = [
+  'We mistake endings for disappearance.',
+  'But nothing we love leaves us unchanged. It lingers in our habits, our memories, the people we become after it is gone. Perhaps forever is not the absence of an ending, but the way something continues to exist beyond it.',
+  'Floral, tart, and delicately sweet, Infinity brings pink gin and chrysanthemum together beneath a veil of foam, finished with rose petals that will never fall in quite the same way twice.',
+  'For everything that ends, and everything that remains.',
+  'A delicate pink gin sour with floral chrysanthemum, wild honey, and bright citrus, finished with a silky foam and scattered rose petals.',
+  'Soft, floral, tart — an endless loop of sweetness and desire.',
+].join('\n\n');
+const infinityIngredients = ['Pink Gin', 'Chrysanthemum', 'Wild Honey', 'Rose'];
+const infinityDetails = `
+UPDATE menu_items SET description = ${q(infinityStory)}, ingredients = ${q(JSON.stringify(infinityIngredients))} WHERE code = 'ken-infinity';
+`;
+
 export const migrations: Migration[] = [
   { version: 1, name: 'schema', sql: schema },
   { version: 2, name: 'seed_menu', sql: seedMenu },
@@ -425,4 +439,5 @@ export const migrations: Migration[] = [
   { version: 16, name: 'ken_224_details', sql: ken224Details },
   { version: 17, name: 'mystery_photo', sql: mysteryPhoto },
   { version: 18, name: 'launch_prices', sql: launchPrices },
+  { version: 19, name: 'infinity_details', sql: infinityDetails },
 ];

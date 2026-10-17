@@ -164,7 +164,7 @@ label { display: block; font-weight: 650; margin-bottom: 8px; }
 @keyframes lb-in { from { opacity: 0; } to { opacity: 1; } }
 .detail-title { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .detail-title h2 { margin: 0; font-size: 23px; line-height: 1.2; text-wrap: balance; }
-.detail-desc { margin: 10px 0 0; font-size: 15px; line-height: 1.55; color: var(--muted); text-wrap: pretty; }
+.detail-desc { margin: 10px 0 0; font-size: 15px; line-height: 1.55; color: var(--muted); text-wrap: pretty; white-space: pre-line; } /* stories may have paragraphs */
 .detail-price { margin-top: 12px; font-size: 22px; font-weight: 800; color: var(--price); font-variant-numeric: tabular-nums; }
 .detail-label { margin: 22px 0 12px; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 .ing-list { list-style: none; margin: 0; padding: 0; }

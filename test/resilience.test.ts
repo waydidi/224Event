@@ -97,6 +97,10 @@ describe('reliability & security', () => {
       const it = menu.data.categories[0].items.find((i: any) => i.name === n);
       for (const u of [it.imageUrl, it.thumbUrl, it.fullUrl]) assert.equal((await http(env, 'GET', u)).status, 200);
     }
+    const inf = menu.data.categories[0].items.find((i: any) => i.name === 'Infinity');
+    assert.match(inf.description, /^We mistake endings for disappearance\.\n\n/);
+    assert.match(inf.description, /sweetness and desire\.$/);
+    assert.deepEqual(inf.ingredients, ['Pink Gin', 'Chrysanthemum', 'Wild Honey', 'Rose']);
     assert.match(k224.description, /^The music has faded/);
     assert.equal(k224.ingredients.length, 8);
     assert.doesNotMatch(JSON.stringify(k224.ingredients), /\d|\bml\b|drop/i);
