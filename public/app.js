@@ -366,7 +366,6 @@
     return [header(), lastVisitNote(), h('div', { class: 'hero' },
       clock3d(),
       h('h2', {}, 'Waiting for staff to open this table'),
-      h('p', {}, 'Please let our staff know you have arrived. This page will update automatically.'),
       h('p', { class: 'small muted' }, h('span', { class: 'pulse', 'aria-hidden': 'true' }), ' Checking…'))];
   }
 
