@@ -347,22 +347,28 @@
 
   // ---------- views ----------
   function header() {
-    const s = state.status && state.status.session;
     const t = state.table;
     return h('header', { class: 'header' },
       h('div', { class: 'brand' },
         h('h1', {}, '224 ', h('span', {}, 'LIVE'), ' HOUSE'),
-        h('span', { class: 'chip' }, 'Table ', h('strong', {}, t ? t.table.number : '–'), s ? ` · ${s.code}` : (t && t.session ? ` · ${t.session.code}` : ''))),
-      state.view === 'main' ? nav() : null);
+        h('span', { class: 'chip' }, 'Table ', h('strong', {}, t ? t.table.number : '–'))));
   }
 
-  function nav() {
-    const st = state.status;
-    const pendingOrders = st.orders.filter((o) => o.status === 'NEW').length;
-    const btn = (id, label, badge) => h('button', { type: 'button', 'aria-current': state.tab === id ? 'page' : null, onclick: () => { state.tab = id; state.showCart = false; state.flash = null; render(); scrollTo(0, 0); } },
+  const scrollTop = () => { (document.querySelector('.phone-scroll') || document.scrollingElement).scrollTop = 0; };
+
+  /** Floating bar at the bottom centre. The menu is home: tapping the active tab again returns to it. */
+  function floatNav() {
+    const waiting = state.status.orders.filter((o) => o.status === 'NEW').length;
+    const btn = (id, label, badge) => h('button', { type: 'button', 'aria-current': state.tab === id ? 'page' : null,
+      onclick: () => { state.tab = state.tab === id ? 'menu' : id; state.showCart = false; state.flash = null; render(); scrollTop(); } },
       label, badge ? h('span', { class: 'badge', 'aria-label': `${badge} waiting` }, badge) : null);
-    return h('nav', { class: 'nav', 'aria-label': 'Sections' },
-      btn('menu', 'Menu'), btn('orders', 'My Orders', pendingOrders || null), btn('bill', 'Pay Table'));
+    return h('nav', { class: 'float-nav', 'aria-label': 'My orders and payment' }, btn('orders', 'My Orders', waiting || null), btn('bill', 'Pay'));
+  }
+
+  /** "‹ Menu" link at the top of the Orders and Pay pages (hidden while orders are paused for payment). */
+  function menuLink() {
+    if (state.status.session.status === 'PAYMENT_REQUESTED') return null;
+    return h('button', { type: 'button', class: 'link-back', onclick: () => { state.tab = 'menu'; state.flash = null; render(); scrollTop(); } }, '‹ Menu');
   }
 
   function flash() {
@@ -574,7 +580,7 @@
   function viewOrders() {
     const orders = state.status.orders.slice().reverse();
     const placed = state.lastPlaced && orders.find((o) => o.orderNumber === state.lastPlaced.orderNumber);
-    return [h('div', { class: 'section' },
+    return [h('div', { class: 'section' }, menuLink(),
       placed ? h('div', { class: 'alert ok', role: 'status' }, `Order received · ${placed.orderNumber}. We’ll bring it to your table.`) : null,
       h('h2', {}, `Orders for ${state.status.session.code}`),
       orders.length ? orders.map(orderCard) : h('p', { class: 'muted' }, 'No orders yet. Everyone at your table can order from their own phone — all orders go on one bill.'))];
@@ -601,7 +607,7 @@
     const st = state.status;
     const bill = st.bill;
     if (st.session.status === 'PAYMENT_REQUESTED') return viewPending();
-    return [h('div', { class: 'section' },
+    return [h('div', { class: 'section' }, menuLink(),
       h('h2', {}, `Table bill · ${st.session.code}`), flash(),
       bill.lines.length ? billLines(bill) : h('p', { class: 'muted' }, 'Nothing to pay yet.'),
       bill.lines.length ? h('p', { class: 'small muted' }, 'Includes every order placed by your table in this session. Requesting payment pauses new orders and lets staff know you’re ready to pay.') : null),
@@ -630,7 +636,7 @@
     if (state.tab === 'orders') body = viewOrders();
     else if (state.tab === 'bill') body = viewBill();
     else body = state.showCart ? viewCart() : viewMenu();
-    return [header(), ...body];
+    return [header(), ...body, state.showCart ? null : floatNav()]; // the cart is a focused step with its own buttons
   }
 
   function render() {
@@ -651,6 +657,8 @@
     $app.replaceChildren(...nodes.flat().filter(Boolean));
     $app.classList.toggle('is-waiting', state.view === 'waiting');
     $app.classList.toggle('is-detail', !!$app.querySelector('.detail'));
+    $app.classList.toggle('has-nav', !!$app.querySelector('.float-nav'));
+    $app.classList.toggle('has-cta', !!$app.querySelector('.cta-bar'));
     const tabs = document.querySelector('.tabs');
     if (tabs) {
       tabs.scrollLeft = tabsScroll;
