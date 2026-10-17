@@ -1,0 +1,37 @@
+name: Prepare seven permanent table QR codes
+on:
+  push:
+    branches: [cloudflare-d1-preparation]
+    paths:
+      - scripts/provision-print-tables.mjs
+      - test/table-printing.test.ts
+      - .github/workflows/provision-print-tables.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: 224event-cloudflare-production
+  cancel-in-progress: false
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Verify table provisioning preserves existing QR tokens and sessions
+        run: node --disable-warning=ExperimentalWarning --test test/table-printing.test.ts
+      - name: Register tables 1 to 7 and verify their live URLs
+        env:
+          WRANGLER_SEND_METRICS: 'false'
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/provision-print-tables.mjs --apply
+      - uses: actions/upload-artifact@v4
+        with:
+          name: seven-permanent-table-links
+          path: table-qr-cards.json
