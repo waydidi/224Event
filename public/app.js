@@ -382,7 +382,7 @@
     const form = h('form', { class: 'section', onsubmit: (e) => { e.preventDefault(); const v = input.value.replace(/\D/g, ''); if (v.length === len) join(v); else { state.joinError = `Please enter the ${len}-digit PIN.`; render(); } } },
       h('label', { for: 'pin' }, 'Table PIN'),
       input,
-      h('p', { id: 'pin-help', class: 'small muted' }, `Staff will give you a ${len}-digit PIN for this table. It keeps your table’s orders and bill private to your group.`),
+      h('p', { id: 'pin-help', class: 'small muted' }, 'It keeps your table’s orders and bill private to your group.'),
       state.joinError ? h('div', { class: 'alert error', role: 'alert' }, state.joinError) : null,
       h('div', { class: 'btn-row' }, h('button', { class: 'btn', type: 'submit', disabled: state.busy }, state.busy ? 'Joining…' : 'Start ordering')));
     if (!state.pinFocused) { state.pinFocused = true; setTimeout(() => input.focus(), 50); }
