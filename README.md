@@ -46,7 +46,7 @@ npm run typecheck
    npm run admin -- price:import prices.json   # { "lost-cherry": 280, "negroni": 220, ... }  (THB)
    npm run admin -- menu:list
    ```
-   Optional details per item, shown when a guest taps the drink: `npm run admin -- item:update lost-cherry --image https://… --description "…" --ingredients "Bourbon whiskey, Cherry, Amaretto"`. Classic cocktails come with standard ingredients; the six signature recipes need to be filled in by the bar.
+   Photos live in `public/menu/` (a large `name.webp` for the detail page and a small square `name-thumb.webp` for the menu card; The Morning Light already has both). Optional details per item, shown when a guest taps the drink: `npm run admin -- item:update lost-cherry --image /static/menu/lost-cherry.webp --thumb /static/menu/lost-cherry-thumb.webp --description "…" --ingredients "Bourbon whiskey, Cherry, Amaretto"`. Classic cocktails come with standard ingredients; the six signature recipes need to be filled in by the bar.
 2. **Tables and QR codes.** Run `npm run admin -- tables:ensure <N>`, then `npm run admin -- qr:sheet ./qr-codes`. This writes a printable A4 PDF (4 cards per page) and one PNG per table. Set `PUBLIC_BASE_URL` before printing, because the QR codes contain that URL.
 3. **Telegram:**
    1. Create a bot with @BotFather and put the token in `TELEGRAM_BOT_TOKEN`.

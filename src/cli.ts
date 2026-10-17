@@ -112,12 +112,13 @@ const commands: Record<string, { usage: string; run: (args: string[]) => Promise
   },
 
   'item:update': {
-    usage: 'item:update <item code> [--image URL] [--description TEXT] [--prep-note TEXT] [--ingredients "Gin, Campari, Sweet vermouth"]',
+    usage: 'item:update <item code> [--image URL] [--thumb URL] [--description TEXT] [--prep-note TEXT] [--ingredients "Gin, Campari, Sweet vermouth"]',
     run: ([code, ...rest]) => {
-      const fields: { description?: string | null; image_url?: string | null; prep_note?: string | null; ingredients?: string[] } = {};
+      const fields: { description?: string | null; image_url?: string | null; thumb_url?: string | null; prep_note?: string | null; ingredients?: string[] } = {};
       for (let i = 0; i < rest.length; i += 2) {
         const v = rest[i + 1] === '-' ? null : rest[i + 1];
         if (rest[i] === '--image') fields.image_url = v;
+        else if (rest[i] === '--thumb') fields.thumb_url = v;
         else if (rest[i] === '--description') fields.description = v;
         else if (rest[i] === '--prep-note') fields.prep_note = v;
         else if (rest[i] === '--ingredients') fields.ingredients = (v ?? '').split(',');

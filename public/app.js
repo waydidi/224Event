@@ -392,8 +392,9 @@
   function itemCard(item, enabled) {
     const qty = state.cart.get(item.id) || 0;
     const orderable = enabled && item.available && item.priceSatang;
-    const thumb = item.imageUrl
-      ? h('img', { class: 'thumb', src: item.imageUrl, alt: '', loading: 'lazy', width: 76, height: 76 })
+    const thumbSrc = item.thumbUrl || item.imageUrl;
+    const thumb = thumbSrc
+      ? h('img', { class: 'thumb', src: thumbSrc, alt: '', loading: 'lazy', width: 76, height: 76 })
       : h('div', { class: 'thumb', 'aria-hidden': 'true' }, '🍸');
     return h('article', { class: `item${item.available ? '' : ' unavailable'}`, 'aria-label': item.name,
       onclick: (e) => { if (!e.target.closest('.qty')) openDetail(item.id); } },

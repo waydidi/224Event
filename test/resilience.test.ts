@@ -70,6 +70,11 @@ describe('reliability & security', () => {
     const negroni = menu.data.categories[2].items.find((i: any) => i.name === 'Negroni');
     assert.deepEqual(negroni.ingredients, ['Gin', 'Campari', 'Sweet vermouth', 'Orange peel']);
     assert.deepEqual(menu.data.categories[1].items[0].ingredients, []); // signature recipes come from the bar
+    const light = menu.data.categories[1].items.find((i: any) => i.name === 'The Morning Light');
+    assert.equal(light.imageUrl, '/static/menu/the-morning-light.webp');
+    assert.equal(light.thumbUrl, '/static/menu/the-morning-light-thumb.webp');
+    assert.equal(menu.data.categories[1].items[0].imageUrl, null); // only The Morning Light has a photo so far
+    for (const u of [light.imageUrl, light.thumbUrl]) assert.equal((await http(env, 'GET', u)).status, 200); // files are actually served
     const s = await openTable(env, 1);
     const token = await join(env, 1, s.join_pin);
     // Price all but one.

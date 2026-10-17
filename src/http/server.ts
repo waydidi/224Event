@@ -166,7 +166,7 @@ export function createHttpServer(ctx: Ctx, tg: TelegramClient) {
           name: c.name,
           items: c.items.map((i) => ({
             id: i.id, name: i.name, description: i.description, priceSatang: i.price_satang,
-            imageUrl: i.image_url, available: i.available === 1, ingredients: JSON.parse(i.ingredients) as string[],
+            imageUrl: i.image_url, thumbUrl: i.thumb_url, available: i.available === 1, ingredients: JSON.parse(i.ingredients) as string[],
           })),
         })),
       },

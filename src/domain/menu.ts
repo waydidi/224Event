@@ -11,6 +11,7 @@ export interface MenuItemRow {
   description: string | null;
   price_satang: number | null;
   image_url: string | null;
+  thumb_url: string | null;
   available: number;
   prep_note: string | null;
   /** JSON array of ingredient names shown on the item's detail page. */
@@ -61,15 +62,17 @@ export function setAvailability(ctx: Ctx, query: string, available: boolean, act
   });
 }
 
-export function updateItemDetails(ctx: Ctx, query: string, fields: { description?: string | null; image_url?: string | null; prep_note?: string | null; ingredients?: string[] }) {
+export function updateItemDetails(ctx: Ctx, query: string, fields: { description?: string | null; image_url?: string | null; thumb_url?: string | null; prep_note?: string | null; ingredients?: string[] }) {
   return ctx.db.tx(() => {
     const item = findMenuItem(ctx.db, query);
     const { ingredients: list, ...rest } = fields;
-    const next = { description: item.description, image_url: item.image_url, prep_note: item.prep_note, ...rest };
+    const next = { description: item.description, image_url: item.image_url, thumb_url: item.thumb_url, prep_note: item.prep_note, ...rest };
     const ingredients = list ? JSON.stringify(list.map((s) => s.trim()).filter(Boolean).slice(0, 12)) : item.ingredients;
-    if (next.image_url && !/^(https:\/\/|\/)/.test(next.image_url)) throw new Error('image_url must be https:// or a site-relative path');
-    ctx.db.run('UPDATE menu_items SET description = ?, image_url = ?, prep_note = ?, ingredients = ?, updated_at = ? WHERE id = ?', [
-      next.description, next.image_url, next.prep_note, ingredients, ctx.now().toISOString(), item.id,
+    for (const [k, v] of [['image_url', next.image_url], ['thumb_url', next.thumb_url]] as const) {
+      if (v && !/^(https:\/\/|\/)/.test(v)) throw new Error(`${k} must be https:// or a site-relative path`);
+    }
+    ctx.db.run('UPDATE menu_items SET description = ?, image_url = ?, thumb_url = ?, prep_note = ?, ingredients = ?, updated_at = ? WHERE id = ?', [
+      next.description, next.image_url, next.thumb_url, next.prep_note, ingredients, ctx.now().toISOString(), item.id,
     ]);
     audit(ctx, { type: 'system' }, 'menu.update_details', 'menu_item', item.id, fields);
     return { ...item, ...next, ingredients };

@@ -303,6 +303,13 @@ INSERT INTO menu_items(category_id, code, name, price_satang, available, sort_or
   (3, 'ken-infinity', 'Infinity', NULL, 1, 3, '1970-01-01T00:00:00.000Z');
 `;
 
+// Photos: image_url is the large detail-page picture, thumb_url the small menu-card crop.
+const menuPhotos = `
+ALTER TABLE menu_items ADD COLUMN thumb_url TEXT;
+UPDATE menu_items SET image_url = '/static/menu/the-morning-light.webp', thumb_url = '/static/menu/the-morning-light-thumb.webp'
+  WHERE code = 'the-morning-light';
+`;
+
 export const migrations: Migration[] = [
   { version: 1, name: 'schema', sql: schema },
   { version: 2, name: 'seed_menu', sql: seedMenu },
@@ -313,4 +320,5 @@ export const migrations: Migration[] = [
     name: 'category_order',
     sql: `UPDATE menu_categories SET sort_order = CASE code WHEN 'kens-birthday' THEN 1 WHEN 'signature' THEN 2 WHEN 'classic' THEN 3 ELSE sort_order END;`,
   },
+  { version: 6, name: 'menu_photos', sql: menuPhotos },
 ];
