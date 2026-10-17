@@ -1,0 +1,28 @@
+name: Validate Cloudflare D1 migrations
+
+on:
+  push:
+    branches: [cloudflare-d1-preparation]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.18.0'
+          cache: npm
+      - run: npm ci
+      - name: Generate migrations from canonical app SQL
+        run: node scripts/export-d1-migrations.mjs
+      - name: Validate against local D1 (no production writes)
+        run: npx --yes wrangler@4 d1 migrations apply 224event-db --local
+      - name: Run existing Node application tests
+        run: npm test
+      - name: Typecheck
+        run: npm run typecheck
