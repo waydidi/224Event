@@ -308,4 +308,9 @@ export const migrations: Migration[] = [
   { version: 2, name: 'seed_menu', sql: seedMenu },
   { version: 3, name: 'menu_ingredients', sql: ingredients },
   { version: 4, name: 'kens_birthday_special', sql: kensBirthday },
+  {
+    version: 5,
+    name: 'category_order',
+    sql: `UPDATE menu_categories SET sort_order = CASE code WHEN 'kens-birthday' THEN 1 WHEN 'signature' THEN 2 WHEN 'classic' THEN 3 ELSE sort_order END;`,
+  },
 ];

@@ -26,7 +26,8 @@ export function getMenu(db: Database) {
 
 /** Ordering is blocked until every menu item has an approved price. */
 export function menuReadiness(db: Database) {
-  const missing = db.all<{ name: string }>('SELECT name FROM menu_items WHERE price_satang IS NULL ORDER BY category_id, sort_order').map((r) => r.name);
+  const missing = db.all<{ name: string }>(`SELECT m.name FROM menu_items m JOIN menu_categories c ON c.id = m.category_id
+     WHERE m.price_satang IS NULL ORDER BY c.sort_order, m.sort_order`).map((r) => r.name);
   return { ready: missing.length === 0, missing };
 }
 
