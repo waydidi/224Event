@@ -434,15 +434,17 @@
     fruit: [['circle', { cx: 8, cy: 16, r: 3.6 }], ['circle', { cx: 16.5, cy: 17, r: 3.2 }], ['path', { d: 'M8 12.4C9 8 12 4.8 17 3.5M16.5 13.8C16 9.5 16.4 6.4 17 3.5' }]],
     soda: [['circle', { cx: 8.5, cy: 15.5, r: 3.5 }], ['circle', { cx: 15.5, cy: 9.5, r: 2.6 }], ['circle', { cx: 15, cy: 18, r: 1.6 }], ['circle', { cx: 9, cy: 6, r: 1.6 }]],
     salt: [['path', { d: 'M8 9.5h8l-1.2 11.5H9.2z' }], ['path', { d: 'M9 9.5V7a3 3 0 0 1 6 0v2.5' }], ['path', { d: 'M11 5.6h.01M13 5.6h.01' }]],
+    flower: [['circle', { cx: 12, cy: 12, r: 2.2 }], ['path', { d: 'M12 9.8V4M12 14.2V20M9.8 12H4M14.2 12H20M10.4 10.4L6.3 6.3M13.6 13.6l4.1 4.1M13.6 10.4l4.1-4.1M10.4 13.6l-4.1 4.1' }]],
     drop: [['path', { d: 'M12 3.5s6 6.4 6 10.8a6 6 0 0 1-12 0c0-4.4 6-10.8 6-10.8z' }]],
   };
   function ingredientIcon(name) {
     const n = name.toLowerCase();
     const kind =
       /egg/.test(n) ? 'egg'
+      : /chrysanthemum|elderflower|jasmine|lavender|hibiscus/.test(n) ? 'flower'
       : /espresso|coffee/.test(n) ? 'coffee'
       : /lime|lemon|orange|citron|citrus|grapefruit|yuzu/.test(n) && !/vodka/.test(n) ? 'citrus'
-      : /gin|vodka|rum|tequila|mezcal|whisk|bourbon|rye|campari|vermouth|liqueur|amaretto|triple sec|cognac|brandy|aperol/.test(n) ? 'spirit'
+      : /gin|vodka|rum|tequila|mezcal|whisk|bourbon|rye|campari|vermouth|liqueur|amaretto|cointreau|triple sec|cognac|brandy|aperol/.test(n) ? 'spirit'
       : /sugar|syrup|honey|cola|grenadine/.test(n) ? 'sweet'
       : /mint|basil|leaf|olive|herb|thyme|rosemary/.test(n) ? 'herb'
       : /cherry|cranberry|mango|berry|peach|passion|pineapple|coconut|rice/.test(n) ? 'fruit'

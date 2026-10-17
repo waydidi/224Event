@@ -74,6 +74,11 @@ describe('reliability & security', () => {
     assert.equal(light.imageUrl, '/static/menu/the-morning-light.webp');
     assert.equal(light.thumbUrl, '/static/menu/the-morning-light-thumb.webp');
     assert.equal(menu.data.categories[1].items[0].imageUrl, null); // only The Morning Light has a photo so far
+    assert.deepEqual(light.ingredients, ['Suntory Kakubin Whiskey', 'Chrysanthemum liqueur', 'Cointreau', 'Wild honey', 'Lemon juice', 'Angostura bitters', 'Sea salt']);
+    assert.match(light.description, /^“The Morning Light” is a homage to Hiroshi Senju/);
+    assert.match(light.description, /deeply rooted in nature\.$/);
+    // Guests see names only: no amounts, method or garnish.
+    assert.doesNotMatch(JSON.stringify([light.ingredients, light.description]), /\d|\bml\b|dash|pinch|shake|garnish|rosemary|peel/i);
     for (const u of [light.imageUrl, light.thumbUrl]) assert.equal((await http(env, 'GET', u)).status, 200); // files are actually served
     const s = await openTable(env, 1);
     const token = await join(env, 1, s.join_pin);

@@ -310,6 +310,19 @@ UPDATE menu_items SET image_url = '/static/menu/the-morning-light.webp', thumb_u
   WHERE code = 'the-morning-light';
 `;
 
+// The Morning Light: story and ingredient names from the bar's menu notes.
+// Quantities, method and garnish are deliberately not shown to guests.
+const morningLightStory =
+  '“The Morning Light” is a homage to Hiroshi Senju and the Japanese philosophy that beauty is revealed through harmony rather than control. ' +
+  'Inspired by the painting Morning Light at Hōki-ji Temple, it follows the same path as the artist himself, who fell in love with Suntory whisky for its quiet elegance and natural character. ' +
+  'Bright citrus greets the palate like the first rays of dawn, while honey, chrysanthemum, and Japanese whisky settle into a warm, contemplative finish. ' +
+  'A drink that captures the first light over a quiet temple, peaceful, luminous, and deeply rooted in nature.';
+const morningLightIngredients = ['Suntory Kakubin Whiskey', 'Chrysanthemum liqueur', 'Cointreau', 'Wild honey', 'Lemon juice', 'Angostura bitters', 'Sea salt'];
+const morningLightDetails = `
+UPDATE menu_items SET description = ${q(morningLightStory)}, ingredients = ${q(JSON.stringify(morningLightIngredients))}
+  WHERE code = 'the-morning-light';
+`;
+
 export const migrations: Migration[] = [
   { version: 1, name: 'schema', sql: schema },
   { version: 2, name: 'seed_menu', sql: seedMenu },
@@ -321,4 +334,5 @@ export const migrations: Migration[] = [
     sql: `UPDATE menu_categories SET sort_order = CASE code WHEN 'kens-birthday' THEN 1 WHEN 'signature' THEN 2 WHEN 'classic' THEN 3 ELSE sort_order END;`,
   },
   { version: 6, name: 'menu_photos', sql: menuPhotos },
+  { version: 7, name: 'morning_light_details', sql: morningLightDetails },
 ];
