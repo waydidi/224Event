@@ -218,9 +218,11 @@ describe('reliability & security', () => {
 
   test('the 224 logo is in place: served to guests and available for the receipt', async () => {
     env = await setup();
-    const img = await http(env, 'GET', '/static/logo-224.webp');
-    assert.equal(img.status, 200);
-    assert.equal(img.headers.get('content-type'), 'image/webp');
+    for (const file of ['logo-224.webp', 'logo-224-lockup.webp']) {
+      const img = await http(env, 'GET', `/static/${file}`);
+      assert.equal(img.status, 200, file);
+      assert.equal(img.headers.get('content-type'), 'image/webp');
+    }
     assert.ok(fs.existsSync(env.config.receipt.logoPath), 'receipt logo file missing');
     assert.equal(fs.readFileSync(env.config.receipt.logoPath).subarray(1, 4).toString(), 'PNG');
   });

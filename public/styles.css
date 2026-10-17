@@ -131,63 +131,6 @@ label { display: block; font-weight: 650; margin-bottom: 8px; }
 .last-visit a { color: inherit; font-weight: 700; }
 .last-visit .dismiss { flex: none; width: 32px; height: 32px; margin: -6px -6px 0 0; border: 0; border-radius: 8px; background: transparent; font-size: 20px; line-height: 1; }
 
-/* ---- 3D alarm clock (waiting screen) ------------------------------------ */
-.clock3d { position: relative; width: 112px; height: 112px; margin: 18px auto 10px; perspective: 420px; }
-.clock-shadow { position: absolute; left: 50%; bottom: 4px; width: 62px; height: 12px; margin-left: -31px; border-radius: 50%; background: radial-gradient(closest-side, rgba(23,20,27,0.35), transparent); animation: clock-shadow 2.4s ease-in-out infinite; }
-.clock-hop { position: absolute; inset: 0; transform-style: preserve-3d; animation: clock-hop 2.4s cubic-bezier(.45,0,.35,1) infinite; transform-origin: 50% 88%; }
-.clock-body { position: absolute; left: 50%; top: 50%; width: 66px; height: 66px; margin: -36px 0 0 -33px; transform-style: preserve-3d; transform: rotateX(8deg); }
-.clock-body i, .clock-face { position: absolute; display: block; }
-
-/* Case: stacked discs give the clock real thickness when it turns. */
-.clock-rim { inset: 0; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ff6b7d, #b5162f 70%); }
-.clock-rim:nth-child(n+6) { background: #8f1124; }
-.clock-rim:nth-child(6)  { transform: translateZ(-2px); }
-.clock-rim:nth-child(7)  { transform: translateZ(-4px); }
-.clock-rim:nth-child(8)  { transform: translateZ(-6px); }
-.clock-rim:nth-child(9)  { transform: translateZ(-8px); }
-.clock-rim:nth-child(10) { transform: translateZ(-10px); }
-.clock-rim:nth-child(11) { transform: translateZ(-12px); }
-.clock-rim:nth-child(12) { transform: translateZ(-14px); background: #6e0c1b; }
-.clock-rim:nth-child(13) { transform: translateZ(1px); background: radial-gradient(circle at 32% 28%, #ff8a98, #e8344e 45%, #a3132a 100%); box-shadow: inset -4px -6px 10px rgba(0,0,0,0.35), inset 3px 4px 6px rgba(255,255,255,0.25); }
-
-.clock-face { left: 7px; top: 7px; width: 52px; height: 52px; border-radius: 50%; transform: translateZ(2px); background: radial-gradient(circle at 40% 35%, #fffdf7, #efe6d6 70%, #d8ccb6); box-shadow: inset 0 3px 6px rgba(0,0,0,0.35); }
-.tick { left: 50%; top: 50%; width: 3px; height: 7px; margin: -3.5px 0 0 -1.5px; border-radius: 2px; background: #2a2230; }
-.tick.t12 { transform: translateY(-19px); }
-.tick.t6  { transform: translateY(19px); }
-.tick.t3  { transform: translateX(19px) rotate(90deg); }
-.tick.t9  { transform: translateX(-19px) rotate(90deg); }
-.clock-hand { left: 50%; bottom: 50%; border-radius: 2px; transform-origin: 50% 100%; background: #1d1722; }
-.clock-hand.hour { width: 4px; height: 13px; margin-left: -2px; animation: clock-spin 28.8s linear infinite; }
-.clock-hand.minute { width: 3px; height: 19px; margin-left: -1.5px; background: var(--accent); animation: clock-spin 2.4s linear infinite; }
-.clock-pin { left: 50%; top: 50%; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 1.5px #1d1722; }
-.clock-glass { left: 9px; top: 9px; width: 48px; height: 48px; border-radius: 50%; transform: translateZ(3px); background: linear-gradient(135deg, rgba(255,255,255,0.55), rgba(255,255,255,0) 42%); pointer-events: none; }
-
-/* Brass bells, hammer and legs sit behind the case. */
-.clock-bell { top: -12px; width: 26px; height: 17px; border-radius: 26px 26px 4px 4px; background: radial-gradient(circle at 35% 25%, #ffe6a6, #f2b84b 45%, #a8741a); box-shadow: inset -2px -3px 4px rgba(0,0,0,0.3); transform: translateZ(-5px); }
-.clock-bell.left  { left: -5px;  transform: translateZ(-5px) rotate(-32deg); }
-.clock-bell.right { right: -5px; transform: translateZ(-5px) rotate(32deg); }
-.clock-hammer { left: 50%; top: -9px; width: 4px; height: 10px; margin-left: -2px; border-radius: 2px; background: #a8741a; transform: translateZ(-6px); animation: clock-ring 0.12s linear infinite alternate; }
-.clock-leg { bottom: -7px; width: 7px; height: 12px; border-radius: 2px 2px 4px 4px; background: linear-gradient(#b5162f, #6e0c1b); transform: translateZ(-6px); }
-.clock-leg.left  { left: 9px;  transform: translateZ(-6px) rotate(28deg); }
-.clock-leg.right { right: 9px; transform: translateZ(-6px) rotate(-28deg); }
-
-@keyframes clock-hop {
-  0%, 100% { transform: translate(0, 0) rotateZ(0) rotateY(0) scale(1, 1); }
-  6%       { transform: translate(0, 0) scale(1.08, 0.9); }
-  24%      { transform: translate(-18px, -26px) rotateZ(-16deg) rotateY(-32deg) scale(1, 1); }
-  42%      { transform: translate(0, 0) rotateZ(0) rotateY(0) scale(1, 1); }
-  48%      { transform: translate(0, 0) scale(1.08, 0.9); }
-  56%      { transform: translate(0, 0) scale(1, 1); }
-  74%      { transform: translate(18px, -26px) rotateZ(16deg) rotateY(32deg) scale(1, 1); }
-  92%      { transform: translate(0, 0) rotateZ(0) rotateY(0) scale(1.06, 0.93); }
-}
-@keyframes clock-shadow {
-  0%, 42%, 56%, 92%, 100% { transform: scale(1); opacity: 1; }
-  24%, 74% { transform: scale(0.6); opacity: 0.45; }
-}
-@keyframes clock-spin { to { transform: rotate(360deg); } }
-@keyframes clock-ring { from { transform: translateZ(-6px) rotate(-14deg); } to { transform: translateZ(-6px) rotate(14deg); } }
-
 /* ---- Product detail ------------------------------------------------------ */
 .item { cursor: pointer; }
 .item-open { all: unset; cursor: pointer; }
@@ -220,7 +163,7 @@ label { display: block; font-weight: 650; margin-bottom: 8px; }
 .detail-cta .qty { background: var(--surface); border: 1px solid var(--line); }
 label[for="pin"] { text-align: center; }
 
-/* Waiting screen: centre the clock + heading in the space below the header. */
+/* Waiting screen: the logo, heading and table pill are centred on the screen. */
 .app.is-waiting { display: flex; flex-direction: column; padding-bottom: 0; }
 .app.is-detail { padding-bottom: 0; } /* the detail sheet reaches the bottom edge itself */
 .waiting-center { flex: 1; display: grid; place-items: center; } /* centred in the whole screen (there is no header on this page) */
@@ -268,3 +211,9 @@ label[for="pin"] { text-align: center; }
   .cart-thumb.photo { height: 66px; }
   .cart-line .qty button { width: 40px; height: 40px; }
 }
+
+/* ---- Waiting page: full logo, message, table pill ---- */
+.waiting-logo { display: block; width: min(300px, 78vw); height: auto; margin: 0 auto 6px; }
+.waiting-center .hero h2 { margin: 14px 0 12px; }
+.chip.chip-lg { padding: 8px 20px; font-size: 17px; }
+.waiting-center .checking { margin-top: 16px; }

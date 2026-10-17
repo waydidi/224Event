@@ -410,28 +410,14 @@
     return [header(), h('div', { class: 'hero' }, h('div', { class: 'icon', 'aria-hidden': 'true' }, '⚠️'), h('h2', {}, 'Something’s not right'), h('p', {}, state.errorText))];
   }
 
-  /** 3D alarm clock (pure CSS) that hops top-left / top-right while the table waits. */
-  function clock3d() {
-    const rims = Array.from({ length: 8 }, () => h('i', { class: 'clock-rim' }));
-    return h('div', { class: 'clock3d', 'aria-hidden': 'true' },
-      h('div', { class: 'clock-shadow' }),
-      h('div', { class: 'clock-hop' },
-        h('div', { class: 'clock-body' },
-          h('i', { class: 'clock-bell left' }), h('i', { class: 'clock-bell right' }), h('i', { class: 'clock-hammer' }),
-          h('i', { class: 'clock-leg left' }), h('i', { class: 'clock-leg right' }),
-          rims,
-          h('div', { class: 'clock-face' },
-            h('i', { class: 'tick t12' }), h('i', { class: 'tick t3' }), h('i', { class: 'tick t6' }), h('i', { class: 'tick t9' }),
-            h('i', { class: 'clock-hand hour' }), h('i', { class: 'clock-hand minute' }), h('i', { class: 'clock-pin' })),
-          h('i', { class: 'clock-glass' }))));
-  }
-
   function viewWaiting() {
-    // No header here: this first page is just the clock and the message, centred on the screen.
+    // First page: no header, just the full logo, the message and the table, centred on the screen.
+    const t = state.table ? state.table.table.number : '–';
     return [lastVisitNote(), h('div', { class: 'waiting-center' }, h('div', { class: 'hero' },
-      clock3d(),
+      h('img', { class: 'waiting-logo', src: '/static/logo-224-lockup.webp', alt: '224 Live House, Bangkok · Bar & Cafe', width: 300, height: 287 }),
       h('h2', {}, 'Waiting for staff'),
-      h('p', { class: 'small muted' }, h('span', { class: 'pulse', 'aria-hidden': 'true' }), ' Checking…')))];
+      h('span', { class: 'chip chip-lg' }, 'Table ', h('strong', {}, t)),
+      h('p', { class: 'small muted checking' }, h('span', { class: 'pulse', 'aria-hidden': 'true' }), ' Checking…')))];
   }
 
   function viewJoin() {
