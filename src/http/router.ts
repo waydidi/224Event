@@ -15,7 +15,7 @@ import { listTables } from '../domain/tables.ts';
 import type { TelegramClient } from '../telegram/api.ts';
 import { handleUpdate } from '../telegram/bot.ts';
 
-const MIME: Record<string, string> = {
+export const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -28,7 +28,7 @@ const MIME: Record<string, string> = {
   '.webmanifest': 'application/manifest+json',
 };
 
-const SECURITY_HEADERS: Record<string, string> = {
+export const SECURITY_HEADERS: Record<string, string> = {
   'x-content-type-options': 'nosniff',
   'x-frame-options': 'DENY',
   'referrer-policy': 'no-referrer',

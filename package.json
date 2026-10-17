@@ -11,7 +11,11 @@
     "start": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning src/index.ts",
     "admin": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning src/cli.ts",
     "test": "node --disable-warning=ExperimentalWarning --test --test-concurrency=1 test/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "cf:dev": "wrangler dev",
+    "cf:deploy": "wrangler deploy",
+    "cf:admin": "node --disable-warning=ExperimentalWarning scripts/cf-admin.ts",
+    "cf:smoke": "node --disable-warning=ExperimentalWarning scripts/cf-smoke.ts"
   },
   "dependencies": {
     "pdfkit": "^0.17.2",

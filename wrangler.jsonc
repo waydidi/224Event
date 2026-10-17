@@ -1,0 +1,31 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "live-house-224",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2026-01-15",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Static frontend (public/) is served by the Worker through the ASSETS binding.
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": true, "html_handling": "none", "not_found_handling": "none" },
+
+  // The one Durable Object that owns the SQLite database.
+  "durable_objects": { "bindings": [{ "name": "VENUE", "class_name": "Venue" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Venue"] }],
+
+  // PDFKit's self-contained build (no file system needed for built-in fonts).
+  "alias": { "pdfkit": "./node_modules/pdfkit/js/pdfkit.standalone.js" },
+
+  // Fonts and the receipt logo are bundled into the Worker as binary data.
+  "rules": [{ "type": "Data", "globs": ["**/*.otf", "**/*.png"], "fallthrough": true }],
+
+  // Your domain, served directly by this Worker (no DNS record to create by hand).
+  "routes": [{ "pattern": "orders.224livehouse.com", "custom_domain": true }],
+
+  "vars": {
+    "PUBLIC_BASE_URL": "https://orders.224livehouse.com",
+    "DISPLAY_TIMEZONE": "Asia/Bangkok",
+    "VENUE_NAME": "224 LIVE HOUSE"
+  },
+
+  "observability": { "enabled": true }
+}

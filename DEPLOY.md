@@ -1,64 +1,59 @@
-# Going live: Cloudflare domain + Fly.io
+# Going live on Cloudflare (domain + app + database in one place)
 
-The app is one Node process with a SQLite file, so it runs on Fly.io with a persistent volume.
-Cloudflare provides the domain, DNS and HTTPS in front of it. Run everything below on your own computer.
-Keep **one** Fly machine only (SQLite must not be shared by two servers).
+The whole system runs on Cloudflare: a **Worker** serves the app, one **Durable Object** with built-in **SQLite**
+is the database (orders, bills, receipts, Telegram queue), and **orders.224livehouse.com** is attached to the Worker
+directly, so there is no DNS record or server to manage. (A Fly.io alternative is kept in `DEPLOY-FLY.md`.)
 
-## 1. Buy the domain
-Cloudflare dashboard → **Domains → Registrations** → search, buy (`224livehouse.com`, bought).
+> **Plan:** use **Workers Paid ($5/month)**. Receipts are generated as PDFs inside the Worker, which needs more CPU
+> time per request than the Free plan's 10 ms allows. Everything else would fit the free tier.
 
-## 2. Create the Fly app
+## 1. One-time setup (on your computer)
 ```bash
-brew install flyctl            # or: curl -L https://fly.io/install.sh | sh
-fly auth signup                # or: fly auth login   (needs a card)
-fly launch --copy-config --no-deploy        # pick a unique app name when asked; keep region sin
-fly volumes create data --size 1 --region sin
-```
-`fly.toml` already has `PUBLIC_BASE_URL = "https://orders.224livehouse.com"`.
-
-## 3. Secrets (never put these in git)
-```bash
-fly secrets set \
-  TELEGRAM_BOT_TOKEN=123456:ABC... \
-  TELEGRAM_STAFF_CHAT_ID=-100123456789 \
-  TELEGRAM_WEBHOOK_SECRET=$(openssl rand -hex 24) \
-  VENUE_NAME="224 LIVE HOUSE" \
-  VENUE_ADDRESS_LINES="Line 1|Line 2"
+git clone https://github.com/waydidi/224Event && cd 224Event
+npm install
+npx wrangler login            # opens the browser: sign in with the Cloudflare account that owns 224livehouse.com
 ```
 
-## 4. Deploy
+## 2. Secrets (typed once, stored encrypted in Cloudflare — never in git)
 ```bash
-fly deploy
-fly scale count 1
+npx wrangler secret put TELEGRAM_BOT_TOKEN        # from @BotFather
+npx wrangler secret put TELEGRAM_STAFF_CHAT_ID    # the staff group's chat ID (starts with -100…)
+npx wrangler secret put TELEGRAM_WEBHOOK_SECRET   # any long random string (e.g. from: openssl rand -hex 24)
+npx wrangler secret put INTERNAL_API_TOKEN        # another long random string: your admin password
 ```
+Optional venue details (shown on receipts) can be set as plain variables in `wrangler.jsonc` → `vars`:
+`VENUE_ADDRESS_LINES` (use `|` between lines), `VENUE_PHONE`, `VENUE_TAX_ID`.
 
-## 5. Point the domain at it
+## 3. Deploy
 ```bash
-fly certs add orders.224livehouse.com        # shows the DNS record to create
+npm run cf:deploy
 ```
-Cloudflare dashboard → your domain → **DNS → Add record**: `CNAME`, name `orders`, target `<app>.fly.dev`,
-proxy **DNS only** (grey cloud) until `fly certs show orders.224livehouse.com` says the certificate is issued.
-Then, if you want Cloudflare's proxy (orange cloud), set **SSL/TLS → Full (strict)**.
+Cloudflare creates the database and attaches `orders.224livehouse.com` (the domain must be in this same Cloudflare account).
+Open https://orders.224livehouse.com — it works as soon as the certificate is issued (about a minute).
 
-## 6. Set up the venue on the live server
+## 4. Set up the venue (no shell needed)
 ```bash
-fly ssh console -C "node --disable-warning=ExperimentalWarning src/cli.ts tables:ensure 7"
-fly ssh console -C "node --disable-warning=ExperimentalWarning src/cli.ts telegram:set-webhook"
-fly ssh console -C "node --disable-warning=ExperimentalWarning src/cli.ts telegram:set-commands"
-fly ssh console -C "node --disable-warning=ExperimentalWarning src/cli.ts staff:add <telegram-id> cashier \"Name\""
-fly ssh console -C "node --disable-warning=ExperimentalWarning src/cli.ts check"
+export ADMIN_URL=https://orders.224livehouse.com
+export ADMIN_TOKEN=<the INTERNAL_API_TOKEN you chose>
+npm run cf:admin -- tables:ensure 7
+npm run cf:admin -- telegram:set-webhook
+npm run cf:admin -- telegram:set-commands
+npm run cf:admin -- staff:add <telegram-id> cashier "Name"      # each staff member sends /whoami to the bot for their ID
+npm run cf:admin -- check
+npm run cf:admin -- qr                                            # saves table-qr-codes.pdf — print it
 ```
+Print `table-qr-codes.pdf` (4 table cards per A4 page, 7 cards = 2 pages). Each QR holds the permanent address of one table.
 
-## 7. QR codes (7 tables)
+## Day to day
+- Staff work entirely in Telegram (open table, PIN, mark served, confirm paid).
+- Change a price: `npm run cf:admin -- price:set negroni 380`. Sold out / restock: `/soldout` and `/restock` in Telegram.
+- Live logs: `npx wrangler tail`. Backups: Cloudflare keeps the Durable Object's SQLite data redundantly;
+  point-in-time restore is available from the dashboard (Workers & Pages → live-house-224 → Durable Objects).
+
+## Testing before going live
 ```bash
-fly ssh console -C "node --disable-warning=ExperimentalWarning src/cli.ts qr:sheet /data/qr-codes"
-fly ssh sftp get /data/qr-codes/table-qr-codes.pdf
+npm test                   # 31 tests against the Node build of the same code
+npm run cf:dev             # run the real Cloudflare runtime locally (workerd)
+npm run cf:smoke           # end-to-end: QR → join → order → Telegram → served → pay → receipt PDF → Telegram outage retry
 ```
-Print `table-qr-codes.pdf` (4 cards per A4 page). The codes contain the live address and each table's permanent token,
-so generate them **after** the domain is final, on the live server.
-
-## Backups
-- Fly takes automatic daily snapshots of the volume (`fly volumes snapshots list`).
-- Extra safety copy any time (safe while running):
-  `fly ssh console -C "node --disable-warning=ExperimentalWarning src/cli.ts db:backup /data/backup-$(date +%F).db"`
-  then `fly ssh sftp get /data/backup-YYYY-MM-DD.db`.
+(See the header of `scripts/cf-smoke.ts` for the exact `wrangler dev` flags the smoke test expects.)

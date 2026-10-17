@@ -57,7 +57,7 @@ npm run typecheck
    `npm run admin -- staff:add <id> server|cashier|lead "Display name"`.
 5. **Logo.** The 224 logo is included: `public/logo-224-header.webp` (transparent, shown top-left in the app), `assets/receipt-logo.png` (black on white, printed on receipts; override with `RECEIPT_LOGO_PATH`) and the supplied original in `assets/brand/`.
 6. **Venue and receipts.** Set `VENUE_*`, `RECEIPT_*`, `PAYMENT_METHODS`, `SERVICE_CHARGE_BPS` and `VAT_BPS`. Leave the charges at 0 unless they really apply; the system never invents charges.
-7. Going live on Cloudflare + Fly.io: see [DEPLOY.md](DEPLOY.md).
+7. Going live: see [DEPLOY.md](DEPLOY.md) (all on Cloudflare: Worker + Durable Object SQLite + your domain) or [DEPLOY-FLY.md](DEPLOY-FLY.md) (Fly.io alternative).
 8. Run `npm run admin -- check`. It exits non-zero until everything above is in place.
 
 ## Staff procedure (Telegram)

@@ -121,7 +121,7 @@ export async function renderReceiptPdf(d: ReceiptData, assets: ReceiptAssets): P
     height: logoSize,
     draw: (doc, y) => {
       if (assets.logo) {
-        doc.image(assets.logo as string, x0, y, { fit: [W, logoSize], align: 'center', valign: 'center' });
+        doc.image(typeof assets.logo === 'string' ? assets.logo : (assets.logo.buffer.slice(assets.logo.byteOffset, assets.logo.byteOffset + assets.logo.byteLength) as ArrayBuffer), x0, y, { fit: [W, logoSize], align: 'center', valign: 'center' });
         return;
       }
       // Default mark until the venue's own logo file is configured.
