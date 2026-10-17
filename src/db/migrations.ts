@@ -474,6 +474,12 @@ const mojitoPhoto = `
 UPDATE menu_items SET image_url = '/static/menu/mojito.webp', thumb_url = '/static/menu/mojito-thumb.webp', full_url = '/static/menu/mojito-full.webp' WHERE name = 'Mojito';
 `;
 
+// Only the bar's own texts are shown to guests: remove every ingredient list / description we did not receive from the bar.
+const clearUnsupplied = `
+UPDATE menu_items SET description = NULL, ingredients = '[]', prep_note = NULL
+WHERE code NOT IN ('the-morning-light', 'naoko', 'the-basket-case', 'ken-224', 'ken-33', 'ken-infinity');
+`;
+
 export const migrations: Migration[] = [
   { version: 1, name: 'schema', sql: schema },
   { version: 2, name: 'seed_menu', sql: seedMenu },
@@ -510,4 +516,5 @@ export const migrations: Migration[] = [
   { version: 29, name: 'negroni_photo', sql: negroniPhoto },
   { version: 30, name: 'old_fashioned_photo', sql: oldFashionedPhoto },
   { version: 31, name: 'mojito_photo', sql: mojitoPhoto },
+  { version: 32, name: 'clear_unsupplied_details', sql: clearUnsupplied },
 ];

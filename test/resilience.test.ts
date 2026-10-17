@@ -71,7 +71,10 @@ describe('reliability & security', () => {
     assert.deepEqual(menu.data.categories.map((c: any) => [...new Set(c.items.map((i: any) => i.priceSatang))]), [[52000], [48000], [36000]]);
     assert.deepEqual(menu.data.categories.map((c: any) => [c.name, c.items.length]), [['Kenneth’s Birthday Special', 3], ['Signature Cocktails', 6], ['Classic Cocktails', 12]]);
     const negroni = menu.data.categories[2].items.find((i: any) => i.name === 'Negroni');
-    assert.deepEqual(negroni.ingredients, ['Gin', 'Campari', 'Sweet vermouth', 'Orange peel']);
+    assert.deepEqual(negroni.ingredients, []); // classic recipes were never supplied by the bar, so none are shown
+    assert.equal(negroni.description, null);
+    const supplied = ['The Morning Light', 'Naoko', 'The Basket Case', '224', '33 — 三十三', 'INFINITY ∞'];
+    for (const it of menu.data.categories.flatMap((c: any) => c.items)) if (!supplied.includes(it.name)) assert.deepEqual([it.description, it.ingredients], [null, []], it.name);
     assert.deepEqual(menu.data.categories[1].items[0].ingredients, []); // signature recipes come from the bar (Lost Cherry has none yet)
     const light = menu.data.categories[1].items.find((i: any) => i.name === 'The Morning Light');
     assert.equal(light.imageUrl, '/static/menu/the-morning-light.webp');
