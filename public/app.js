@@ -365,7 +365,7 @@
   function viewWaiting() {
     return [header(), lastVisitNote(), h('div', { class: 'hero' },
       clock3d(),
-      h('h2', {}, 'Waiting for staff to open this table'),
+      h('h2', {}, 'Waiting for staff'),
       h('p', { class: 'small muted' }, h('span', { class: 'pulse', 'aria-hidden': 'true' }), ' Checking…'))];
   }
 
