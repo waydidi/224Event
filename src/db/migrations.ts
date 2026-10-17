@@ -390,6 +390,11 @@ const ken224Details = `
 UPDATE menu_items SET description = ${q(ken224Story)}, ingredients = ${q(JSON.stringify(ken224Ingredients))} WHERE code = 'ken-224';
 `;
 
+// 33 and Infinity are still a surprise: both show the same teaser picture.
+const mysteryPhoto = `
+UPDATE menu_items SET image_url = '/static/menu/mystery.webp', thumb_url = '/static/menu/mystery-thumb.webp', full_url = '/static/menu/mystery-full.webp' WHERE code IN ('ken-33', 'ken-infinity');
+`;
+
 export const migrations: Migration[] = [
   { version: 1, name: 'schema', sql: schema },
   { version: 2, name: 'seed_menu', sql: seedMenu },
@@ -411,4 +416,5 @@ export const migrations: Migration[] = [
   { version: 14, name: 'basket_case_details', sql: basketCaseDetails },
   { version: 15, name: 'ken_224_photo', sql: ken224Photo },
   { version: 16, name: 'ken_224_details', sql: ken224Details },
+  { version: 17, name: 'mystery_photo', sql: mysteryPhoto },
 ];
