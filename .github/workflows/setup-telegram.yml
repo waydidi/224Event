@@ -1,0 +1,38 @@
+name: Connect 224 Event Telegram notifications
+on:
+  push:
+    branches: [cloudflare-d1-preparation]
+    paths:
+      - scripts/setup-telegram.mjs
+      - scripts/setup-telegram.d.mts
+      - test/telegram-setup.test.ts
+      - .github/workflows/setup-telegram.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: 224event-cloudflare-production
+  cancel-in-progress: false
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - name: Test recipient and bot verification
+        run: node --test test/telegram-setup.test.ts
+      - name: Connect exact bot to 224 Event and send a test notification
+        env:
+          WRANGLER_SEND_METRICS: "false"
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_STAFF_CHAT_ID: ${{ secrets.TELEGRAM_STAFF_CHAT_ID }}
+          TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+          INTERNAL_API_TOKEN: ${{ secrets.INTERNAL_API_TOKEN }}
+        run: node scripts/setup-telegram.mjs --apply
