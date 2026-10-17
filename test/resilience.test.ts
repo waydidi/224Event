@@ -81,6 +81,15 @@ describe('reliability & security', () => {
     // Guests see names only: no amounts, method or garnish.
     assert.doesNotMatch(JSON.stringify([light.ingredients, light.description]), /\d|\bml\b|dash|pinch|shake|garnish|rosemary|peel/i);
     for (const u of [light.imageUrl, light.thumbUrl]) assert.equal((await http(env, 'GET', u)).status, 200); // files are actually served
+    const naoko = menu.data.categories[1].items.find((i: any) => i.name === 'Naoko');
+    assert.equal(naoko.imageUrl, '/static/menu/naoko.webp');
+    assert.equal(naoko.thumbUrl, '/static/menu/naoko-thumb.webp');
+    for (const u of [naoko.imageUrl, naoko.thumbUrl]) assert.equal((await http(env, 'GET', u)).status, 200);
+    assert.match(naoko.description, /^Naoko is a vivid green cocktail that conceals a quiet melancholy/);
+    assert.match(naoko.description, /until the final notes are all that remain\.$/);
+    assert.deepEqual(naoko.ingredients, ['Mexicat Tequila', 'Green Fanta (preferably zero sugar)', 'Midori Melon Liqueur', 'Chrysanthemum Liqueur', 'Lime Juice', 'Saline solution', 'Keto Green Apple Syrup', 'Fresh Cucumbers', 'Fresh Orange Peels', 'Fresh Mint leaves']);
+    // Guests see names only: no amounts, method or garnish line.
+    assert.doesNotMatch(JSON.stringify([naoko.ingredients, naoko.description]), /\d|\bml\b|\bdrops?\b|double strain|garnish|shake/i);
     const s = await openTable(env, 1);
     const token = await join(env, 1, s.join_pin);
     // Price all but one.

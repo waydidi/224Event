@@ -1,5 +1,6 @@
 /* 224 Live House — light guest theme: plain white page. Tweak the tokens below. */
 :root {
+  --photo-bg: radial-gradient(circle at 18% 8%, #ff8a68 0, #c2321f 26%, #6b130c 60%, #2a0504 100%); /* the red studio look of the drink photos */
   --screen-h: 100dvh; /* height of the guest screen; the demo overrides it with its phone frame */
   --bg: #ffffff;
   --surface: #f6f5f7;
@@ -7,8 +8,8 @@
   --line: #e2dfe6;
   --text: #17141b;
   --muted: #6b6573;
-  --accent: #e8344e;
-  --accent-press: #c42640;
+  --accent: #c90a0b; /* the 224 logo red, exactly: every button, badge and highlight */
+  --price: #06c755;  /* LINE green, for every price and total */
   --gold: #b06a00;
   --ok: #17824f;
   --warn: #a35f00;
@@ -16,7 +17,6 @@
   --tint-warn: #fff3dc;
   --tint-ok: #e4f5ec;
   --tint-danger: #fde8ea;
-  --tint-accent: #ffe6ea;
   --radius: 16px;
   --tap: 48px;
   --safe-b: env(safe-area-inset-bottom, 0px);
@@ -66,12 +66,13 @@ button { cursor: pointer; }
 .items { display: grid; gap: 12px; }
 .item { display: grid; grid-template-columns: 76px 1fr; align-items: center; gap: 14px; padding: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
 .item.unavailable { opacity: 0.5; }
-.thumb { width: 76px; height: 76px; border-radius: 12px; object-fit: cover; background: radial-gradient(circle at 30% 25%, #ffffff, var(--tint-accent) 75%); display: grid; place-items: center; font-size: 30px; }
-.thumb.photo { height: 114px; object-fit: cover; background: none; } /* tall 2:3 frame filled edge to edge, no grey space */
+.thumb { width: 76px; height: 114px; border-radius: 12px; object-fit: cover; } /* every drink: the same tall 2:3 frame, photo edge to edge */
+.thumb.ph { display: grid; place-items: center; background: var(--photo-bg); }
+.ph-glass { width: 34px; height: 34px; fill: none; stroke: #f6d9a0; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; opacity: 0.95; }
 .item h3 { margin: 2px 0 4px; font-size: 17px; }
 .item p { margin: 0 0 8px; color: var(--muted); font-size: 13px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; } /* long stories: 2 lines on the card, full text on the detail page */
 .item-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.price { font-weight: 750; color: var(--gold); font-size: 16px; }
+.price { font-weight: 750; color: var(--price); font-size: 16px; }
 .tag { font-size: 12px; color: var(--danger); font-weight: 700; }
 
 .qty { display: inline-flex; align-items: center; gap: 4px; background: var(--surface-2); border-radius: 999px; padding: 2px; }
@@ -84,7 +85,7 @@ button { cursor: pointer; }
 .cta-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; padding: 12px 16px calc(12px + var(--safe-b)); background: linear-gradient(0deg, var(--bg) 65%, rgba(255,255,255,0)); }
 .cta-bar > * { max-width: 488px; margin: 0 auto; }
 .btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 54px; padding: 0 18px; border-radius: 14px; border: 0; background: var(--accent); color: #fff; font-weight: 750; font-size: 16px; text-decoration: none; }
-.btn:active { background: var(--accent-press); }
+.btn:active { transform: scale(0.985); } /* press feedback without changing the colour */
 .btn:disabled { background: var(--surface-2); color: var(--muted); cursor: default; }
 .btn.secondary { background: var(--surface-2); color: var(--text); }
 .btn.ghost { background: transparent; border: 1px solid var(--line); color: var(--text); }
@@ -101,7 +102,7 @@ button { cursor: pointer; }
 .line .q { color: var(--muted); margin-right: 6px; }
 .line.sub { color: var(--muted); font-size: 14px; }
 .line.total { border-top: 1px dashed var(--line); margin-top: 6px; padding-top: 12px; font-size: 20px; font-weight: 800; }
-.line.total span:last-child { color: var(--gold); }
+.line.total span:last-child { color: var(--price); }
 .status { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
 .status.new { background: var(--tint-warn); color: var(--warn); }
 .status.served { background: var(--tint-ok); color: var(--ok); }
@@ -117,7 +118,7 @@ label { display: block; font-weight: 650; margin-bottom: 8px; }
 .hero .icon { font-size: 52px; margin-bottom: 8px; }
 .hero h2 { margin: 0 0 6px; font-size: 24px; }
 .hero p { margin: 0 auto; max-width: 340px; color: var(--muted); line-height: 1.45; }
-.hero .amount { font-size: 40px; font-weight: 850; color: var(--gold); margin: 14px 0 4px; }
+.hero .amount { font-size: 40px; font-weight: 850; color: var(--price); margin: 14px 0 4px; }
 .pulse { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--warn); animation: pulse 1.4s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: 0.25; } }
 
@@ -138,9 +139,10 @@ label { display: block; font-weight: 650; margin-bottom: 8px; }
 /* Cocktail page: picture 70% / description + ingredients 30% of the screen (the 30% scrolls inside itself). */
 .app.is-detail { height: var(--screen-h); min-height: 0; overflow: hidden; }
 .detail { height: 100%; display: flex; flex-direction: column; }
-.detail-hero { position: relative; flex: 0 0 auto; height: min(calc(var(--screen-h) * 0.7 + 24px), calc(var(--screen-h) - 200px)); /* 70%, but never leave the text panel under ~200px on short phones */ overflow: hidden; display: grid; place-items: center; background: radial-gradient(circle at 50% 40%, #ffffff, var(--tint-accent) 78%); }
+.detail-hero { position: relative; flex: 0 0 auto; height: min(calc(var(--screen-h) * 0.7 + 24px), calc(var(--screen-h) - 200px)); /* 70%, but never leave the text panel under ~200px on short phones */ overflow: hidden; display: grid; place-items: center; background: var(--photo-bg); }
 /* The photo fills the whole header edge to edge (nothing but the picture): on tall phones it fits as is, on shorter ones a little of the top/bottom is trimmed. */
 .detail-hero .hero-img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 42%; }
+.hero-glass { width: 128px; height: 128px; fill: none; stroke: #f6d9a0; stroke-width: 1.1; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.4)); } /* drink without a photo: glass on the red studio backdrop */
 .detail-back { position: absolute; top: calc(16px + env(safe-area-inset-top, 0px)); left: 16px; width: 48px; height: 48px; border-radius: 50%; border: 0; background: #fff; color: #111; display: grid; place-items: center; box-shadow: 0 2px 10px rgba(23,20,27,0.18); }
 .detail-back svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .detail-sheet { position: relative; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; margin-top: -24px; border-radius: 24px 24px 0 0; background: var(--surface); padding: 22px 20px calc(120px + var(--safe-b)); }
@@ -149,7 +151,7 @@ label { display: block; font-weight: 650; margin-bottom: 8px; }
 .badge-sig { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px 4px 7px; border-radius: 999px; background: var(--tint-warn); color: var(--gold); font-size: 12px; font-weight: 750; letter-spacing: 0.02em; }
 .badge-sig svg { width: 14px; height: 14px; fill: currentColor; }
 .detail-desc { margin: 10px 0 0; font-size: 15px; line-height: 1.55; color: var(--muted); text-wrap: pretty; }
-.detail-price { margin-top: 12px; font-size: 22px; font-weight: 800; color: var(--gold); font-variant-numeric: tabular-nums; }
+.detail-price { margin-top: 12px; font-size: 22px; font-weight: 800; color: var(--price); font-variant-numeric: tabular-nums; }
 .detail-label { margin: 22px 0 12px; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 .ing-list { list-style: none; margin: 0; padding: 0; }
 .ing { padding: 13px 0; border-bottom: 1px solid var(--line); font-size: 16px; line-height: 1.35; }
@@ -199,16 +201,16 @@ label[for="pin"] { text-align: center; }
 .cart-line { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
 .cart-line:first-child { padding-top: 2px; }
 .cart-line:last-child { border-bottom: 0; }
-.cart-thumb { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; background: radial-gradient(circle at 30% 25%, #ffffff, var(--tint-accent) 75%); display: grid; place-items: center; font-size: 24px; }
-.cart-thumb.photo { height: 84px; background: none; }
+.cart-thumb { width: 56px; height: 84px; border-radius: 10px; object-fit: cover; }
+.cart-thumb.ph { display: grid; place-items: center; background: var(--photo-bg); }
+.cart-thumb .ph-glass { width: 26px; height: 26px; }
 .cart-name { font-weight: 700; font-size: 16px; line-height: 1.25; overflow-wrap: anywhere; }
-.cart-price { margin-top: 3px; font-weight: 750; font-size: 15px; color: var(--gold); font-variant-numeric: tabular-nums; }
+.cart-price { margin-top: 3px; font-weight: 750; font-size: 15px; color: var(--price); font-variant-numeric: tabular-nums; }
 .cart-note { margin-top: 6px; padding: 5px 9px; border-radius: 8px; background: var(--surface-2); color: var(--muted); font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
 .cart-line .qty { background: var(--surface-2); }
 @media (max-width: 359px) {
   .cart-line { grid-template-columns: 44px minmax(0, 1fr) auto; gap: 8px; }
-  .cart-thumb { width: 44px; height: 44px; }
-  .cart-thumb.photo { height: 66px; }
+  .cart-thumb { width: 44px; height: 66px; }
   .cart-line .qty button { width: 40px; height: 40px; }
 }
 

@@ -326,6 +326,25 @@ UPDATE menu_items SET description = ${q(morningLightStory)}, ingredients = ${q(J
 // Per-drink note to staff ("less ice"); orders keep their own whole-order note too.
 const itemNotes = `ALTER TABLE order_items ADD COLUMN note TEXT NOT NULL DEFAULT '';`;
 
+// Naoko's photo (same two sizes as The Morning Light).
+const naokoPhoto = `
+UPDATE menu_items SET image_url = '/static/menu/naoko.webp', thumb_url = '/static/menu/naoko-thumb.webp' WHERE code = 'naoko';
+`;
+
+// Naoko: story and ingredient names from the bar's menu notes (no amounts, method or garnish shown to guests).
+const naokoStory =
+  'Naoko is a vivid green cocktail that conceals a quiet melancholy beneath its brightness. ' +
+  'It opens crisp, fresh, and almost carefree before unfolding into delicate floral notes and a lingering bittersweet finish. ' +
+  'Crafted with Midori, blue agave tequila, chrysanthemum liqueur, lime, green apple infused with fresh orange peel, cucumber, and mint, it is inspired by Haruki Murakami’s Norwegian Wood. ' +
+  'Gentle yet fragile, understated yet unforgettable, Naoko reveals her true depth slowly—inviting you to linger, sip by sip, until the final notes are all that remain.';
+const naokoIngredients = [
+  'Mexicat Tequila', 'Green Fanta (preferably zero sugar)', 'Midori Melon Liqueur', 'Chrysanthemum Liqueur', 'Lime Juice',
+  'Saline solution', 'Keto Green Apple Syrup', 'Fresh Cucumbers', 'Fresh Orange Peels', 'Fresh Mint leaves',
+];
+const naokoDetails = `
+UPDATE menu_items SET description = ${q(naokoStory)}, ingredients = ${q(JSON.stringify(naokoIngredients))} WHERE code = 'naoko';
+`;
+
 export const migrations: Migration[] = [
   { version: 1, name: 'schema', sql: schema },
   { version: 2, name: 'seed_menu', sql: seedMenu },
@@ -339,4 +358,6 @@ export const migrations: Migration[] = [
   { version: 6, name: 'menu_photos', sql: menuPhotos },
   { version: 7, name: 'morning_light_details', sql: morningLightDetails },
   { version: 8, name: 'order_item_notes', sql: itemNotes },
+  { version: 9, name: 'naoko_photo', sql: naokoPhoto },
+  { version: 10, name: 'naoko_details', sql: naokoDetails },
 ];

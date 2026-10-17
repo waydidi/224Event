@@ -445,8 +445,8 @@
     const orderable = enabled && item.available && item.priceSatang;
     const thumbSrc = item.thumbUrl || item.imageUrl;
     const thumb = thumbSrc
-      ? h('img', { class: 'thumb photo', src: thumbSrc, alt: '', loading: 'lazy', width: 76, height: 114 })
-      : h('div', { class: 'thumb', 'aria-hidden': 'true' }, '🍸');
+      ? h('img', { class: 'thumb', src: thumbSrc, alt: '', loading: 'lazy', width: 76, height: 114 })
+      : h('div', { class: 'thumb ph', 'aria-hidden': 'true' }, glassIcon('ph-glass'));
     return h('article', { class: `item${item.available ? '' : ' unavailable'}`, 'aria-label': item.name,
       onclick: (e) => { if (!e.target.closest('.qty')) openDetail(item.id); } },
       thumb,
@@ -475,6 +475,9 @@
     }
     return el;
   }
+  /** The cocktail-glass outline used on the studio-style tile of a drink that has no photo yet. */
+  const glassIcon = (cls) => svg([['path', { d: 'M4 4h16l-8 9z' }], ['path', { d: 'M12 13v7M8 20.5h8' }], ['circle', { cx: 17.5, cy: 5.5, r: 1.6 }]], cls);
+
   function openDetail(id) {
     rememberMenuScroll();
     state.detailId = id;
@@ -512,7 +515,7 @@
       h('div', { class: 'detail-hero' },
         item.imageUrl
           ? h('img', { class: 'hero-img', src: item.imageUrl, alt: item.name })
-          : svg([['path', { d: 'M4 4h16l-8 9z' }], ['path', { d: 'M12 13v7M8 20.5h8' }], ['circle', { cx: 17.5, cy: 5.5, r: 1.6 }]], 'hero-glass'),
+          : glassIcon('hero-glass'),
         h('button', { type: 'button', class: 'detail-back', 'aria-label': 'Back to menu', onclick: () => closeDetail(false) },
           svg([['path', { d: 'M19 12H5M11 6l-6 6 6 6' }]]))),
       h('section', { class: 'detail-sheet', 'aria-labelledby': 'detail-name' },
@@ -634,8 +637,8 @@
   function cartRow(l) {
     const src = l.item.thumbUrl || l.item.imageUrl;
     const thumb = src
-      ? h('img', { class: 'cart-thumb photo', src, alt: '', width: 56, height: 84 })
-      : h('div', { class: 'cart-thumb', 'aria-hidden': 'true' }, '🍸');
+      ? h('img', { class: 'cart-thumb', src, alt: '', width: 56, height: 84 })
+      : h('div', { class: 'cart-thumb ph', 'aria-hidden': 'true' }, glassIcon('ph-glass'));
     const name = l.note ? `${l.item.name} (${l.note})` : l.item.name;
     return h('div', { class: 'cart-line' },
       thumb,
