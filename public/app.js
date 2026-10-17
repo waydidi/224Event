@@ -363,10 +363,10 @@
   }
 
   function viewWaiting() {
-    return [header(), lastVisitNote(), h('div', { class: 'hero' },
+    return [header(), lastVisitNote(), h('div', { class: 'waiting-center' }, h('div', { class: 'hero' },
       clock3d(),
       h('h2', {}, 'Waiting for staff'),
-      h('p', { class: 'small muted' }, h('span', { class: 'pulse', 'aria-hidden': 'true' }), ' Checking…'))];
+      h('p', { class: 'small muted' }, h('span', { class: 'pulse', 'aria-hidden': 'true' }), ' Checking…')))];
   }
 
   function viewJoin() {
@@ -634,6 +634,7 @@
     const focusId = active && active.id;
     const sel = active && 'selectionStart' in active ? [active.selectionStart, active.selectionEnd] : null;
     $app.replaceChildren(...nodes.flat().filter(Boolean));
+    $app.classList.toggle('is-waiting', state.view === 'waiting');
     $app.setAttribute('aria-busy', 'false');
     if (focusId) {
       const el = document.getElementById(focusId);

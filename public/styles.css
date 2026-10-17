@@ -209,3 +209,8 @@ label { display: block; font-weight: 650; margin-bottom: 8px; }
 .detail-cta { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; }
 .detail-cta .qty { background: var(--surface); border: 1px solid var(--line); }
 label[for="pin"] { text-align: center; }
+
+/* Waiting screen: centre the clock + heading in the space below the header. */
+.app.is-waiting { display: flex; flex-direction: column; padding-bottom: 0; }
+.waiting-center { flex: 1; display: grid; place-items: center; padding-bottom: 72px; /* offsets the header so it reads as visually centred */ }
+.waiting-center .hero { padding-top: 0; }
