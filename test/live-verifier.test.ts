@@ -22,7 +22,7 @@ test("live smoke check waits for asset propagation but rejects persistent redire
     globalThis.fetch=async(url,options)=>{
       if(options.redirect!=='manual')throw Error('Verifier must not follow redirects');
       const p=new URL(url).pathname;
-      if(p==='/healthz')return Response.json({ok:true,runtime:'cloudflare-workers',database:'d1',telegramConfigured:false,menuReady:true});
+      if(p==='/healthz')return Response.json({ok:true,runtime:'cloudflare-workers',database:'d1',telegramConfigured:false,telegramGroupFullAccess:true,menuReady:true});
       if(p==='/api/public/menu')return Response.json({categories:[{name:'Cocktails'}]});
       if(p==='/api/internal/tables')return new Response('',{status:401});
       if(p==='/api/integrations/telegram/webhook')return new Response('',{status:503});

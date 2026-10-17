@@ -182,6 +182,7 @@ async function api(
       outboxPending: pending.c,
       outboxOldest: pending.oldest,
       menuReady: (await d.menuReadiness(c.db)).ready,
+      telegramGroupFullAccess: c.config.telegram.groupFullAccess,
       telegramConfigured: !!(
         c.config.telegram.botToken &&
         c.config.telegram.staffChatId &&

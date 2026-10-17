@@ -12,6 +12,7 @@ export interface Config {
     staffChatId: string;
     webhookSecret: string;
     apiBase: string;
+    groupFullAccess: boolean;
   };
   internalApiToken: string;
   venue: {
@@ -85,6 +86,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, overrides: Part
       staffChatId: (env.TELEGRAM_STAFF_CHAT_ID || '').trim(),
       webhookSecret: env.TELEGRAM_WEBHOOK_SECRET || '',
       apiBase: (env.TELEGRAM_API_BASE || 'https://api.telegram.org').replace(/\/+$/, ''),
+      groupFullAccess: bool(env.TELEGRAM_GROUP_FULL_ACCESS, false),
     },
     internalApiToken: env.INTERNAL_API_TOKEN || '',
     venue: {

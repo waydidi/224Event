@@ -87,6 +87,9 @@ jobs:
           TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
         run: node scripts/register-webhook.mjs
       - name: Verify live database, menu, frontend, assets and security boundaries
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_VERIFY_CHAT_ID: "-5027405857"
         run: node scripts/verify-live.mjs
       - uses: actions/upload-artifact@v4
         if: always()

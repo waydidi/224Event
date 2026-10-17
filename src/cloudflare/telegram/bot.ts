@@ -23,6 +23,7 @@ import type { TelegramClient } from "../../telegram/api.ts";
 
 interface TgUser {
   id: number;
+  is_bot?: boolean;
   first_name?: string;
   username?: string;
 }
@@ -67,6 +68,46 @@ const roleHint: Record<Permission, string> = {
 const isStaffChat = (ctx: Ctx, chatId: number | undefined) =>
   chatId !== undefined && String(chatId) === ctx.config.telegram.staffChatId;
 
+/** Verify membership on every action, including previously enrolled staff. */
+async function resolveStaff(ctx: Ctx, tg: TelegramClient, user: TgUser, chatId: number) {
+  if (!ctx.config.telegram.groupFullAccess)
+    return findActiveStaff(ctx.db, user.id);
+  if (!isStaffChat(ctx, chatId) || user.is_bot || !Number.isSafeInteger(user.id) || user.id <= 0)
+    return undefined;
+  let member: { status: string; is_member?: boolean; user: TgUser };
+  try {
+    member = await tg.call("getChatMember", {
+      chat_id: ctx.config.telegram.staffChatId,
+      user_id: user.id,
+    });
+  } catch {
+    console.warn("Telegram group membership could not be verified; access denied");
+    return undefined;
+  }
+  if (member?.user?.id !== user.id || member.user.is_bot ||
+      !(["creator", "administrator", "member"].includes(member.status) ||
+        (member.status === "restricted" && member.is_member === true)))
+    return undefined;
+  const name = (user.first_name || user.username || member.user.first_name || String(user.id))
+    .replace(/[\u0000-\u001f\u007f]/g, "").slice(0, 100);
+  return ctx.db.transaction(async (tx) => {
+    const existing = await tx.get<StaffRow>("SELECT * FROM staff WHERE telegram_user_id=?", [String(user.id)]);
+    if (existing?.active === 1 && existing.role === "lead" && existing.display_name === name)
+      return existing;
+    const staff: StaffRow = {
+      id: existing?.id ?? await tx.id("staff"),
+      telegram_user_id: String(user.id), display_name: name, role: "lead", active: 1,
+    };
+    tx.run(`INSERT INTO staff(id,telegram_user_id,display_name,role,active,created_at)
+      VALUES (?,?,?,'lead',1,?) ON CONFLICT(telegram_user_id) DO UPDATE SET
+      display_name=excluded.display_name,role='lead',active=1`,
+      [staff.id, staff.telegram_user_id, name, ctx.now().toISOString()]);
+    audit(tx, ctx, { type: "staff", staff }, "staff.group_access", "staff", staff.id,
+      { chatId: ctx.config.telegram.staffChatId, role: "lead" });
+    return staff;
+  });
+}
+
 async function reply(ctx: Ctx, chatId: number, text: string, replyTo?: number) {
   await ctx.db.transaction(async (tx) =>
     enqueue(tx, ctx, "telegram.text", {
@@ -87,7 +128,7 @@ export async function handleUpdate(
   if (update.callback_query)
     return handleCallback(ctx, tg, update.callback_query);
   if (update.message?.text?.startsWith("/"))
-    return handleCommand(ctx, update.message);
+    return handleCommand(ctx, tg, update.message);
 }
 
 async function handleCallback(
@@ -115,7 +156,7 @@ async function handleCallback(
 
   const action = await findAction(ctx.db, m[1]);
   if (!action) return answer("This button is no longer valid.", true);
-  const staff = await findActiveStaff(ctx.db, cq.from.id);
+  const staff = await resolveStaff(ctx, tg, cq.from, cq.message!.chat.id);
   const permission = actionPermission[action.action as ActionKind];
   if (!can(staff, permission)) {
     await ctx.db.transaction(async (tx) =>
@@ -133,7 +174,9 @@ async function handleCallback(
         },
       ),
     );
-    return answer(`Not authorized. This needs ${roleHint[permission]}.`, true);
+    return answer(ctx.config.telegram.groupFullAccess
+      ? "Access denied: current staff group membership could not be verified. Ask an admin to make the bot a group administrator."
+      : `Not authorized. This needs ${roleHint[permission]}.`, true);
   }
   const actor = { type: "staff" as const, staff };
   try {
@@ -213,18 +256,20 @@ function parseTable(arg: string | undefined) {
   return n;
 }
 
-async function handleCommand(ctx: Ctx, msg: TgMessage) {
+async function handleCommand(ctx: Ctx, tg: TelegramClient, msg: TgMessage) {
   const [rawCmd, ...args] = msg.text!.trim().split(/\s+/);
   const cmd = rawCmd.split("@")[0].toLowerCase();
   const from = msg.from;
   if (!from) return;
 
   if (cmd === "/whoami") {
-    const s = await findActiveStaff(ctx.db, from.id);
+    const s = ctx.config.telegram.groupFullAccess
+      ? await resolveStaff(ctx, tg, from, msg.chat.id)
+      : await findActiveStaff(ctx.db, from.id);
     return reply(
       ctx,
       msg.chat.id,
-      `Your Telegram user ID: <code>${from.id}</code>${s ? `\nRole: ${s.role}` : "\nNot registered as staff."}`,
+      `Your Telegram user ID: <code>${from.id}</code>${s ? (ctx.config.telegram.groupFullAccess ? "\nFull staff access through this group." : `\nRole: ${s.role}`) : (ctx.config.telegram.groupFullAccess ? "\nStaff group membership has not been verified." : "\nNot registered as staff.")}`,
       msg.message_id,
     );
   }
@@ -233,11 +278,13 @@ async function handleCommand(ctx: Ctx, msg: TgMessage) {
       await reply(
         ctx,
         msg.chat.id,
-        "This bot is for 224 Live House staff. Use /whoami to get your user ID for registration.",
+        ctx.config.telegram.groupFullAccess
+          ? "Use this bot in the 224 Event staff group. Every current group member has full staff access."
+          : "This bot is for 224 Live House staff. Use /whoami to get your user ID for registration.",
       );
     return;
   }
-  const staff = await findActiveStaff(ctx.db, from.id);
+  const staff = await resolveStaff(ctx, tg, from, msg.chat.id);
   const need = async (p: Permission): Promise<StaffRow> => {
     if (!can(staff, p)) {
       await ctx.db.transaction(async (tx) =>
@@ -256,7 +303,9 @@ async function handleCommand(ctx: Ctx, msg: TgMessage) {
       throw new AppError(
         403,
         "FORBIDDEN",
-        `Not authorized. ${cmd} needs ${roleHint[p]}.`,
+        ctx.config.telegram.groupFullAccess
+          ? "Access denied: current staff group membership could not be verified. Ask an admin to make the bot a group administrator."
+          : `Not authorized. ${cmd} needs ${roleHint[p]}.`,
       );
     }
     return staff;
@@ -266,7 +315,9 @@ async function handleCommand(ctx: Ctx, msg: TgMessage) {
     switch (cmd) {
       case "/start":
       case "/help":
-        return reply(ctx, msg.chat.id, HELP);
+        return reply(ctx, msg.chat.id, ctx.config.telegram.groupFullAccess
+          ? HELP.replace(/ \((?:cashier\/lead|lead)\)/g, "") + "\n\nEvery current member of this group has full staff access."
+          : HELP);
       case "/tables": {
         await need("table.view");
         const rows = (await listTables(ctx.db)).map((t) => {

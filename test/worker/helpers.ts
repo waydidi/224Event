@@ -10,8 +10,9 @@ import { loadConfig } from "../../src/config.ts";
 export const INTERNAL = "test-internal-token",
   WEBHOOK = "test-webhook-secret",
   CHAT = "-100777";
-export async function setup(opts: { width?: number; charges?: boolean } = {}) {
+export async function setup(opts: { width?: number; charges?: boolean; groupFullAccess?: boolean } = {}) {
   const calls: { method: string; body: any }[] = [];
+  const members = new Map<number, any>();
   let failing = false,
     seq = 100;
   const root = path.resolve("dist/worker");
@@ -42,6 +43,7 @@ export async function setup(opts: { width?: number; charges?: boolean } = {}) {
             TELEGRAM_STAFF_CHAT_ID: CHAT,
             TELEGRAM_WEBHOOK_SECRET: WEBHOOK,
             TELEGRAM_API_BASE: "https://telegram.test",
+            TELEGRAM_GROUP_FULL_ACCESS: String(opts.groupFullAccess ?? false),
             RECEIPT_WIDTH_MM: String(opts.width ?? 80),
             ...(opts.charges
               ? { SERVICE_CHARGE_BPS: "1000", VAT_BPS: "700" }
@@ -68,12 +70,14 @@ export async function setup(opts: { width?: number; charges?: boolean } = {}) {
           },
           outboundService: async (req) => {
             const method = new URL(req.url).pathname.split("/").at(-1)!;
-            const b = req.headers
+            const b: any = req.headers
               .get("content-type")
               ?.startsWith("application/json")
               ? await req.json()
               : { document: await req.text() };
             calls.push({ method, body: b });
+            if (method === "getChatMember" && members.get(b.user_id) === "error")
+              return Response.json({ ok: false, description: "Membership unavailable" }, { status: 400 });
             if (failing && method !== "answerCallbackQuery")
               return Response.json(
                 {
@@ -86,7 +90,9 @@ export async function setup(opts: { width?: number; charges?: boolean } = {}) {
             return Response.json({
               ok: true,
               result:
-                method === "sendMessage" || method === "sendDocument"
+                method === "getChatMember"
+                  ? members.get(b.user_id) ?? { status: "member", user: { id: b.user_id, is_bot: false } }
+                  : method === "sendMessage" || method === "sendDocument"
                   ? { message_id: seq++ }
                   : true,
             });
@@ -258,6 +264,7 @@ export async function setup(opts: { width?: number; charges?: boolean } = {}) {
     setFailing: (value: boolean) => {
       failing = value;
     },
+    setMember: (user: number, member: any) => { members.set(user, member); },
     close: () => mf.dispose(),
   };
 }

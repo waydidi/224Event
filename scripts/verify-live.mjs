@@ -34,6 +34,38 @@ for (let i = 0; i < 5; i++) {
 assert.equal(health?.ok, true);
 assert.equal(health.runtime, "cloudflare-workers");
 assert.equal(health.database, "d1");
+assert.equal(health.telegramGroupFullAccess, true);
+// Read-only checks against the already connected 224 Event bot and group.
+let telegramMembership;
+if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_VERIFY_CHAT_ID) {
+  const call = async (method, params = {}) => {
+    const response = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/${method}`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify(params), signal: AbortSignal.timeout(20000),
+    });
+    const data = await response.json();
+    assert.equal(data.ok, true, `Telegram ${method} check failed`);
+    return data.result;
+  };
+  const bot = await call("getMe");
+  assert.equal(bot.username, "eventbotbirthday_bot");
+  const chat_id = process.env.TELEGRAM_VERIFY_CHAT_ID;
+  const chat = await call("getChat", { chat_id });
+  assert.equal(chat.title, "224 Event");
+  const own = await call("getChatMember", { chat_id, user_id: bot.id });
+  const admins = await call("getChatAdministrators", { chat_id });
+  const human = admins.find(member => !member.user.is_bot);
+  assert.ok(human, "Expected a human group administrator");
+  const member = await call("getChatMember", { chat_id, user_id: human.user.id });
+  assert.ok(["creator", "administrator"].includes(member.status));
+  telegramMembership = {
+    verified: true,
+    botAdministrator: ["creator", "administrator"].includes(own.status),
+  };
+  console.log(`Telegram group membership lookup verified; bot administrator: ${telegramMembership.botAdministrator}`);
+  if (!telegramMembership.botAdministrator)
+    console.log("::warning::Make 224 Bot an administrator of 224 Event so membership checks work reliably for every member.");
+}
 const menu = await request("/api/public/menu");
 assert.equal(menu.status, 200);
 assert.ok((await menu.json()).categories.length > 0);
@@ -67,6 +99,7 @@ writeFileSync(
       url,
       verifiedAt: new Date().toISOString(),
       health,
+      telegramMembership,
       checks: [
         "D1 health",
         "menu",

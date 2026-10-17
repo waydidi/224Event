@@ -29,3 +29,4 @@ enabled = true
 
 [vars]
 DISPLAY_TIMEZONE = "Asia/Bangkok"
+TELEGRAM_GROUP_FULL_ACCESS = "true"
