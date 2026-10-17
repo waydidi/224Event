@@ -515,7 +515,7 @@
     const cats = state.menu.categories;
     const cat = cats[state.category] || cats[0];
     const tabs = h('div', { class: 'tabs', role: 'tablist' }, cats.map((c, i) =>
-      h('button', { type: 'button', role: 'tab', 'aria-selected': i === state.category ? 'true' : 'false', onclick: () => { state.category = i; render(); } }, c.name)));
+      h('button', { type: 'button', role: 'tab', 'aria-selected': i === state.category ? 'true' : 'false', onclick: () => { state.category = i; state.revealTab = true; render(); } }, c.name)));
     const notice = !state.menu.orderingEnabled
       ? h('div', { class: 'alert' }, 'Ordering opens soon — our prices are being finalised. Please ask staff.')
       : st.session.status === 'PAYMENT_REQUESTED' ? h('div', { class: 'alert' }, 'Payment has been requested, so new orders are paused.') : null;
@@ -633,8 +633,17 @@
     const active = document.activeElement;
     const focusId = active && active.id;
     const sel = active && 'selectionStart' in active ? [active.selectionStart, active.selectionEnd] : null;
+    const tabsScroll = document.querySelector('.tabs')?.scrollLeft ?? 0; // keep pill row position across re-renders
     $app.replaceChildren(...nodes.flat().filter(Boolean));
     $app.classList.toggle('is-waiting', state.view === 'waiting');
+    const tabs = document.querySelector('.tabs');
+    if (tabs) {
+      tabs.scrollLeft = tabsScroll;
+      if (state.revealTab) {
+        state.revealTab = false;
+        tabs.querySelector('[aria-selected="true"]')?.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' });
+      }
+    }
     $app.setAttribute('aria-busy', 'false');
     if (focusId) {
       const el = document.getElementById(focusId);
