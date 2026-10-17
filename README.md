@@ -55,7 +55,7 @@ npm run typecheck
    4. Run `npm run admin -- telegram:set-webhook` and `npm run admin -- telegram:set-commands`.
 4. **Staff.** Each staff member sends `/whoami` to the bot to get their numeric ID. Then register them:
    `npm run admin -- staff:add <id> server|cashier|lead "Display name"`.
-5. **Logo.** The 224 logo is included: `public/logo-224.webp` (transparent, shown top-left in the app), `assets/receipt-logo.png` (black on white, printed on receipts; override with `RECEIPT_LOGO_PATH`) and the supplied original in `assets/brand/`.
+5. **Logo.** The 224 logo is included: `public/logo-224-header.webp` (transparent, shown top-left in the app), `assets/receipt-logo.png` (black on white, printed on receipts; override with `RECEIPT_LOGO_PATH`) and the supplied original in `assets/brand/`.
 6. **Venue and receipts.** Set `VENUE_*`, `RECEIPT_*`, `PAYMENT_METHODS`, `SERVICE_CHARGE_BPS` and `VAT_BPS`. Leave the charges at 0 unless they really apply; the system never invents charges.
 7. Run `npm run admin -- check`. It exits non-zero until everything above is in place.
 

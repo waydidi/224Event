@@ -363,7 +363,7 @@
     const t = state.table;
     return h('header', { class: 'header' },
       h('div', { class: 'brand' },
-        h('h1', { class: 'logo' }, h('img', { src: '/static/logo-224.webp', alt: '224 Live House', width: 83, height: 44 })),
+        h('h1', { class: 'logo' }, h('img', { src: '/static/logo-224-header.webp', alt: '224 Live House, Bangkok', width: 66, height: 56 })),
         h('span', { class: 'chip' }, 'Table ', h('strong', {}, t ? t.table.number : '–'))));
   }
 

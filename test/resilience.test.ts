@@ -246,7 +246,7 @@ describe('reliability & security', () => {
 
   test('the 224 logo is in place: served to guests and available for the receipt', async () => {
     env = await setup();
-    for (const file of ['logo-224.webp', 'logo-224-lockup.webp']) {
+    for (const file of ['logo-224-header.webp', 'logo-224-lockup.webp']) {
       const img = await http(env, 'GET', `/static/${file}`);
       assert.equal(img.status, 200, file);
       assert.equal(img.headers.get('content-type'), 'image/webp');
