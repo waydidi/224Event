@@ -377,6 +377,19 @@ const ken224Photo = `
 UPDATE menu_items SET image_url = '/static/menu/ken-224.webp', thumb_url = '/static/menu/ken-224-thumb.webp', full_url = '/static/menu/ken-224-full.webp' WHERE code = 'ken-224';
 `;
 
+// 224: story and ingredient names from the bar's menu notes (no amounts, method or garnish shown to guests).
+const ken224Story =
+  'The music has faded, the lights have come up, and the night finally catches up with you. ' +
+  'Inspired by the album “Music, Fashion, Film”, it explores performance as identity. Every role we play leaves behind traces of the person beneath it. ' +
+  'Rich espresso and spiced rum carry the warmth of the dance floor, while herbal liqueur and Bianco vermouth soften into bittersweet reflection. ' +
+  'A touch of soy sauce adds unexpected depth, and a whisper of rose lingers like perfume left on a jacket long after sunrise. Bold, velvety, and quietly nostalgic.';
+const ken224Ingredients = [
+  'Dark Spiced Rum', 'Heering Cherry Liqueur', 'Espresso', 'Martini Bianco Vermouth', 'Vanilla Syrup', 'Soy Sauce', 'Rose Water', 'Egg White',
+];
+const ken224Details = `
+UPDATE menu_items SET description = ${q(ken224Story)}, ingredients = ${q(JSON.stringify(ken224Ingredients))} WHERE code = 'ken-224';
+`;
+
 export const migrations: Migration[] = [
   { version: 1, name: 'schema', sql: schema },
   { version: 2, name: 'seed_menu', sql: seedMenu },
@@ -397,4 +410,5 @@ export const migrations: Migration[] = [
   { version: 13, name: 'basket_case_photo', sql: basketCasePhoto },
   { version: 14, name: 'basket_case_details', sql: basketCaseDetails },
   { version: 15, name: 'ken_224_photo', sql: ken224Photo },
+  { version: 16, name: 'ken_224_details', sql: ken224Details },
 ];

@@ -91,6 +91,9 @@ describe('reliability & security', () => {
     for (const u of [basket.imageUrl, basket.thumbUrl, basket.fullUrl]) assert.equal((await http(env, 'GET', u)).status, 200);
     const k224 = menu.data.categories[0].items.find((i: any) => i.name === '224');
     for (const u of [k224.imageUrl, k224.thumbUrl, k224.fullUrl]) assert.equal((await http(env, 'GET', u)).status, 200);
+    assert.match(k224.description, /^The music has faded/);
+    assert.equal(k224.ingredients.length, 8);
+    assert.doesNotMatch(JSON.stringify(k224.ingredients), /\d|\bml\b|drop/i);
     assert.match(basket.description, /^Inspired by the character Allison/);
     assert.equal(basket.ingredients.length, 10);
     assert.doesNotMatch(JSON.stringify(basket.ingredients), /\d|\bml\b|dash/i);
