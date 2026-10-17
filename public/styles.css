@@ -213,7 +213,7 @@ label[for="pin"] { text-align: center; }
 }
 
 /* ---- Waiting page: full logo, message, table pill ---- */
-.waiting-logo { display: block; width: min(300px, 78vw); height: auto; margin: 0 auto 6px; }
+.waiting-logo { display: block; width: min(240px, 62.4vw); height: auto; margin: 0 auto 6px; } /* 80% of the previous 300px / 78vw */
 .waiting-center .hero h2 { margin: 14px 0 12px; }
 .chip.chip-lg { padding: 8px 20px; font-size: 17px; }
 .waiting-center .checking { margin-top: 16px; }
