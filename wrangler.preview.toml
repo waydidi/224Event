@@ -1,0 +1,16 @@
+# Optional READ-ONLY preview. This is not the customer ordering application.
+name = "224event-readonly-preview"
+main = "src/cloudflare/readonly-preview.ts"
+compatibility_date = "2026-10-17"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "224event-db"
+database_id = "6e7236c4-b3ed-4d93-bc73-71f5e80a9b9d"
+migrations_dir = "migrations"
