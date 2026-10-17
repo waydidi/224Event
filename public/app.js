@@ -365,6 +365,21 @@
     return h('nav', { class: 'float-nav', 'aria-label': 'My orders and payment' }, btn('orders', 'My Orders', waiting || null), btn('bill', 'Pay'));
   }
 
+  // The bar slides out of the way while the page scrolls down and returns on scroll up (or at the top).
+  let lastScrollY = 0;
+  const setNavHidden = (hidden) => $app.classList.toggle('nav-hidden', hidden);
+  document.addEventListener('scroll', (e) => {
+    const t = e.target;
+    const isPage = t === document;
+    if (!isPage && !(t.classList && t.classList.contains('phone-scroll'))) return; // ignore scrolling inside text boxes and the pill row
+    const y = Math.max(0, isPage ? document.scrollingElement.scrollTop : t.scrollTop);
+    const dy = y - lastScrollY;
+    if (Math.abs(dy) < 6) return; // ignore tiny movements
+    lastScrollY = y;
+    setNavHidden(dy > 0 && y > 48);
+  }, { capture: true, passive: true });
+  $app.addEventListener('focusin', (e) => { if (e.target.closest('.float-nav')) setNavHidden(false); }); // keyboard users can always reach it
+
   /** "‹ Menu" link at the top of the Orders and Pay pages (hidden while orders are paused for payment). */
   function menuLink() {
     if (state.status.session.status === 'PAYMENT_REQUESTED') return null;
@@ -659,6 +674,7 @@
     $app.classList.toggle('is-detail', !!$app.querySelector('.detail'));
     $app.classList.toggle('has-nav', !!$app.querySelector('.float-nav'));
     $app.classList.toggle('has-cta', !!$app.querySelector('.cta-bar'));
+    if (!$app.querySelector('.float-nav')) setNavHidden(false); // start visible whenever the bar comes back
     const tabs = document.querySelector('.tabs');
     if (tabs) {
       tabs.scrollLeft = tabsScroll;

@@ -236,3 +236,11 @@ label[for="pin"] { text-align: center; }
 .app.has-nav::after { content: ""; position: fixed; left: 0; right: 0; bottom: 0; height: calc(92px + var(--safe-b)); z-index: 20; pointer-events: none; background: linear-gradient(0deg, var(--bg) 80%, rgba(255, 255, 255, 0)); } /* solid under the bar and the gap above it */
 .link-back { all: unset; cursor: pointer; display: inline-flex; align-items: center; min-height: 44px; margin: 0 0 4px -4px; padding: 0 4px; color: var(--muted); font-weight: 650; font-size: 15px; }
 .link-back:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; border-radius: 6px; }
+
+/* Hide-on-scroll: the bar slides down off-screen, and the cart/pay button drops to the bottom edge. */
+.float-nav { transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease; }
+.app.nav-hidden .float-nav { transform: translateX(-50%) translateY(calc(100% + 28px + var(--safe-b))); opacity: 0; pointer-events: none; }
+.app.has-nav .cta-bar { transition: bottom 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.app.has-nav.nav-hidden .cta-bar { bottom: 0; }
+.app.has-nav::after { transition: opacity 0.3s ease; }
+.app.has-nav.nav-hidden::after { opacity: 0; }
