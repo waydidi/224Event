@@ -85,7 +85,7 @@ describe('reliability & security', () => {
   test('PIN brute force locks the session until staff issues a new PIN', async () => {
     env = await setup({ env: { PIN_MAX_FAILED_ATTEMPTS: '3' } });
     const s = await openTable(env, 1);
-    const wrong = s.join_pin === '123456' ? '654321' : '123456';
+    const wrong = s.join_pin === '12' ? '21' : '12';
     for (let i = 0; i < 3; i++) assert.equal((await http(env, 'POST', '/api/public/session/join', { qrToken: env.qr(1), pin: wrong })).status, 401);
     const locked = await http(env, 'POST', '/api/public/session/join', { qrToken: env.qr(1), pin: s.join_pin });
     assert.equal(locked.status, 423);

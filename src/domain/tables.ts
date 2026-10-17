@@ -122,7 +122,7 @@ export function openSession(ctx: Ctx, tableNumber: number, actor: Actor & { type
     const res = ctx.db.run(
       `INSERT INTO table_sessions(table_id, round_number, session_code, status, join_pin, opened_at, opened_by)
        VALUES (?, ?, ?, 'OPEN', ?, ?, ?)`,
-      [table.id, round, sessionCode(table.display_number, round), randomPin(6), now, actor.staff.id],
+      [table.id, round, sessionCode(table.display_number, round), randomPin(ctx.config.access.pinLength), now, actor.staff.id],
     );
     const id = Number(res.lastInsertRowid);
     ctx.db.run("UPDATE tables SET status = 'OCCUPIED', current_session_id = ? WHERE id = ?", [id, table.id]);
@@ -148,7 +148,7 @@ export function rotatePin(ctx: Ctx, tableNumber: number, actor: Actor & { type: 
     const table = requireTable(ctx.db, tableNumber);
     const active = getActiveSession(ctx.db, table);
     if (!active) throw conflict('NO_ACTIVE_SESSION', `Table ${tableNumber} has no active session`);
-    ctx.db.run('UPDATE table_sessions SET join_pin = ?, pin_failed_attempts = 0 WHERE id = ?', [randomPin(6), active.id]);
+    ctx.db.run('UPDATE table_sessions SET join_pin = ?, pin_failed_attempts = 0 WHERE id = ?', [randomPin(ctx.config.access.pinLength), active.id]);
     const s = getSession(ctx.db, active.id)!;
     audit(ctx, actor, 'session.pin_rotate', 'session', s.id);
     announceSession(ctx, s, table, `NEW PIN · TABLE ${table.display_number}`, actor.staff.display_name);

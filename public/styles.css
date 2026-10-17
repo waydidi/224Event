@@ -101,6 +101,7 @@ button { cursor: pointer; }
 textarea, input.pin { width: 100%; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); padding: 12px 14px; font-size: 16px; }
 textarea { min-height: 84px; resize: vertical; }
 input.pin { text-align: center; font-size: 30px; letter-spacing: 0.4em; font-weight: 800; padding: 14px; }
+input.pin.pin-2 { display: block; width: 140px; margin: 0 auto; font-size: 40px; letter-spacing: 0.3em; padding-left: calc(14px + 0.3em); }
 label { display: block; font-weight: 650; margin-bottom: 8px; }
 
 .hero { text-align: center; padding: 28px 20px 8px; }
@@ -203,3 +204,4 @@ label { display: block; font-weight: 650; margin-bottom: 8px; }
 .detail-note { margin-top: 22px; }
 .detail-cta { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; }
 .detail-cta .qty { background: var(--surface); border: 1px solid var(--line); }
+label[for="pin"] { text-align: center; }

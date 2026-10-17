@@ -149,6 +149,7 @@ export function createHttpServer(ctx: Ctx, tg: TelegramClient) {
       json: {
         venue: ctx.config.venue.name,
         table: { number: table.display_number, name: table.name },
+        pinLength: ctx.config.access.pinLength,
         session: session ? { code: session.session_code, status: session.status } : null,
       },
     };

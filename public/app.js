@@ -260,6 +260,7 @@
     } catch (e) {
       state.busy = false;
       state.joinError = e.message;
+      state.pinDraft = '';
       if (e.code === 'NO_ACTIVE_SESSION') await refreshTable();
       render();
     }
@@ -370,17 +371,23 @@
   }
 
   function viewJoin() {
-    const input = h('input', { class: 'pin', id: 'pin', inputmode: 'numeric', autocomplete: 'one-time-code', pattern: '[0-9]*', maxlength: 6, 'aria-describedby': 'pin-help', 'aria-label': 'Table PIN', required: true,
-      oninput: (e) => { state.pinDraft = e.target.value; } });
+    const len = state.table.pinLength || 2;
+    const input = h('input', { class: `pin pin-${len}`, id: 'pin', inputmode: 'numeric', autocomplete: 'one-time-code', pattern: '[0-9]*', maxlength: len, 'aria-describedby': 'pin-help', 'aria-label': 'Table PIN', required: true,
+      oninput: (e) => {
+        const v = e.target.value.replace(/\D/g, '').slice(0, len);
+        e.target.value = v;
+        state.pinDraft = v;
+        if (v.length === len && !state.busy) join(v); // submit as soon as the PIN is complete
+      } });
     input.value = state.pinDraft || '';
-    const form = h('form', { class: 'section', onsubmit: (e) => { e.preventDefault(); const v = input.value.replace(/\D/g, ''); if (v.length === 6) join(v); else { state.joinError = 'Please enter the 6-digit PIN.'; render(); } } },
+    const form = h('form', { class: 'section', onsubmit: (e) => { e.preventDefault(); const v = input.value.replace(/\D/g, ''); if (v.length === len) join(v); else { state.joinError = `Please enter the ${len}-digit PIN.`; render(); } } },
       h('label', { for: 'pin' }, 'Table PIN'),
       input,
-      h('p', { id: 'pin-help', class: 'small muted' }, 'Staff will give you a 6-digit PIN for this table. It keeps your table’s orders and bill private to your group.'),
+      h('p', { id: 'pin-help', class: 'small muted' }, `Staff will give you a ${len}-digit PIN for this table. It keeps your table’s orders and bill private to your group.`),
       state.joinError ? h('div', { class: 'alert error', role: 'alert' }, state.joinError) : null,
       h('div', { class: 'btn-row' }, h('button', { class: 'btn', type: 'submit', disabled: state.busy }, state.busy ? 'Joining…' : 'Start ordering')));
     if (!state.pinFocused) { state.pinFocused = true; setTimeout(() => input.focus(), 50); }
-    return [header(), lastVisitNote(), h('div', { class: 'hero' }, h('div', { class: 'icon', 'aria-hidden': 'true' }, '🍒'), h('h2', {}, `Welcome to ${state.table.table.name || 'your table'}`), h('p', {}, `Session ${state.table.session.code}`)), form];
+    return [header(), lastVisitNote(), h('div', { class: 'hero' }, h('h2', {}, `Welcome to ${state.table.table.name || 'your table'}`), h('p', {}, `Session ${state.table.session.code}`)), form];
   }
 
   function itemCard(item, enabled) {
