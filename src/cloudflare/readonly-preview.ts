@@ -4,9 +4,14 @@
  * NOT the production ordering backend. Writes return 503 until the
  * synchronous Node domain/transaction services are migrated.
  */
+interface D1Statement {
+  first<T = Record<string, unknown>>(): Promise<T | null>;
+  all(): Promise<{ results: Record<string, unknown>[] }>;
+}
+
 export interface Env {
-  DB: D1Database;
-  ASSETS: Fetcher;
+  DB: { prepare(sql: string): D1Statement };
+  ASSETS: { fetch(request: Request): Promise<Response> };
 }
 
 const headers = {
@@ -53,4 +58,4 @@ export default {
     }
     return env.ASSETS.fetch(request);
   },
-} satisfies ExportedHandler<Env>;
+};
