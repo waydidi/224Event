@@ -41,7 +41,7 @@ button { cursor: pointer; }
 
 /* Header */
 .header { position: sticky; top: 0; z-index: 20; background: var(--bg); padding: 16px 16px 8px; }
-.brand { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.brand { display: flex; align-items: center; justify-content: center; }
 .brand .logo { margin: 0; line-height: 0; }
 .brand .logo img { display: block; height: 56px; width: auto; }
 .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: 13px; font-weight: 600; white-space: nowrap; }
