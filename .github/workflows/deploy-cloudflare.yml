@@ -1,0 +1,50 @@
+name: Deploy to Cloudflare
+
+# Manual: GitHub → Actions → "Deploy to Cloudflare" → Run workflow.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      # Optional runtime secrets: copied to the Worker only when they exist as GitHub secrets.
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_STAFF_CHAT_ID: ${{ secrets.TELEGRAM_STAFF_CHAT_ID }}
+      TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+      INTERNAL_API_TOKEN: ${{ secrets.INTERNAL_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Tests must pass before anything is deployed
+        run: npm run typecheck && npm test
+      - name: Deploy the Worker (creates the Durable Object database and attaches orders.224livehouse.com)
+        run: npx wrangler deploy
+      - name: Sync runtime secrets that are configured in GitHub
+        run: |
+          for name in TELEGRAM_BOT_TOKEN TELEGRAM_STAFF_CHAT_ID TELEGRAM_WEBHOOK_SECRET INTERNAL_API_TOKEN; do
+            value="${!name:-}"
+            if [ -n "$value" ]; then
+              printf '%s' "$value" | npx wrangler secret put "$name" >/dev/null && echo "secret set: $name"
+            else
+              echo "secret NOT set (add it in GitHub → Settings → Secrets → Actions): $name"
+            fi
+          done
+      - name: Check the live site
+        run: |
+          for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' https://orders.224livehouse.com/healthz || true)
+            echo "healthz -> $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 10
+          done
+          echo "Site did not answer 200 yet (DNS/certificate can take a few minutes)."; exit 1
