@@ -359,6 +359,20 @@ const basketCasePhoto = `
 UPDATE menu_items SET image_url = '/static/menu/the-basket-case.webp', thumb_url = '/static/menu/the-basket-case-thumb.webp', full_url = '/static/menu/the-basket-case-full.webp' WHERE name = 'The Basket Case';
 `;
 
+// The Basket Case: story and ingredient names from the bar's menu notes (no amounts, method or garnish shown to guests).
+const basketCaseStory =
+  'Inspired by the character Allison, the quiet outsider of “The Breakfast Club”, this introspective cocktail wears a soft mask over a complicated soul. ' +
+  'Reserved and botanical on the first sip with a hint of Turkish rose, it slowly unfolds into delicate cherry, vanilla, and citrus beneath a velvety foam. ' +
+  'It isn’t trying to be liked; it asks for patience before revealing its tenderness. An acquired taste, quietly unforgettable and lingers long after the drink is gone. ' +
+  '“Not every quiet person is empty. Some are simply waiting for someone patient enough to taste the whole story.”';
+const basketCaseIngredients = [
+  'Rock N Rose Sloe Gin', 'Martini Bianco', 'Heering Cherry Liqueur', 'Lime Juice', 'Sugar Syrup', 'Vanilla Syrup',
+  'Rose Water', 'Egg Whites', 'Saline Solution', 'Angostura Bitters',
+];
+const basketCaseDetails = `
+UPDATE menu_items SET description = ${q(basketCaseStory)}, ingredients = ${q(JSON.stringify(basketCaseIngredients))} WHERE code = 'the-basket-case';
+`;
+
 export const migrations: Migration[] = [
   { version: 1, name: 'schema', sql: schema },
   { version: 2, name: 'seed_menu', sql: seedMenu },
@@ -377,4 +391,5 @@ export const migrations: Migration[] = [
   { version: 11, name: 'full_size_photos', sql: fullPhotos },
   { version: 12, name: 'kenneth_birthday_name', sql: kennethName },
   { version: 13, name: 'basket_case_photo', sql: basketCasePhoto },
+  { version: 14, name: 'basket_case_details', sql: basketCaseDetails },
 ];
