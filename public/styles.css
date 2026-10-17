@@ -41,9 +41,9 @@ button { cursor: pointer; }
 
 /* Header */
 .header { position: sticky; top: 0; z-index: 20; background: var(--bg); padding: 16px 16px 8px; }
-.brand { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.brand h1 { margin: 0; font-size: 20px; letter-spacing: 0.14em; font-weight: 800; }
-.brand h1 span { color: var(--accent); }
+.brand { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.brand .logo { margin: 0; line-height: 0; }
+.brand .logo img { display: block; height: 44px; width: auto; }
 .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: 13px; font-weight: 600; white-space: nowrap; }
 .chip strong { color: var(--text); }
 

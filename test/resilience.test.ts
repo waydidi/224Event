@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { afterEach, describe, test } from 'node:test';
 import { applyBps, formatAmount, formatBaht, parseBaht } from '../src/lib/money.ts';
 import { row } from '../src/telegram/render.ts';
@@ -213,6 +214,15 @@ describe('reliability & security', () => {
     const b = (await http(env, 'GET', '/api/public/session/bill', undefined, auth(token))).data.bill;
     assert.deepEqual(b.adjustments.map((a: any) => [a.label, a.amountSatang]), [['Service charge 10%', 2200], ['VAT 7%', 1694]]);
     assert.equal(b.totalSatang, 22000 + 2200 + 1694);
+  });
+
+  test('the 224 logo is in place: served to guests and available for the receipt', async () => {
+    env = await setup();
+    const img = await http(env, 'GET', '/static/logo-224.webp');
+    assert.equal(img.status, 200);
+    assert.equal(img.headers.get('content-type'), 'image/webp');
+    assert.ok(fs.existsSync(env.config.receipt.logoPath), 'receipt logo file missing');
+    assert.equal(fs.readFileSync(env.config.receipt.logoPath).subarray(1, 4).toString(), 'PNG');
   });
 
   test('frontend shell and assets are served with security headers', async () => {

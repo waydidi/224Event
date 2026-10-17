@@ -114,7 +114,7 @@ export async function renderReceiptPdf(d: ReceiptData): Promise<Buffer> {
   };
 
   // ---- Header: logo, name, address ---------------------------------------
-  const logoSize = 44 * k;
+  const logoSize = 52 * k;
   ops.push({
     height: logoSize,
     draw: (doc, y) => {

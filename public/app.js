@@ -360,7 +360,7 @@
     const t = state.table;
     return h('header', { class: 'header' },
       h('div', { class: 'brand' },
-        h('h1', {}, '224 ', h('span', {}, 'LIVE'), ' HOUSE'),
+        h('h1', { class: 'logo' }, h('img', { src: '/static/logo-224.webp', alt: '224 Live House', width: 83, height: 44 })),
         h('span', { class: 'chip' }, 'Table ', h('strong', {}, t ? t.table.number : '–'))));
   }
 
@@ -671,12 +671,11 @@
         h('div', { class: 'card' },
           lines.length ? h('div', { class: 'cart-lines' }, lines.map(cartRow)) : h('p', { class: 'muted' }, 'Your cart is empty.'),
           h('div', { class: 'line total' }, h('span', {}, 'Total'), h('span', {}, baht(cartTotal())))),
-        h('label', { for: 'notes' }, 'Note to staff for the whole order (optional)'), notes,
-        h('p', { class: 'small muted' }, 'Prices are final and shown in Thai Baht. You pay for the whole table at the end.')),
+        h('label', { for: 'notes' }, 'Note to staff for the whole order (optional)'), notes),
       h('div', { class: 'cta-bar' }, h('div', { class: 'btn-row' },
         h('button', { class: 'btn', type: 'button', disabled: !lines.length || state.busy || !state.status.orderingEnabled, onclick: placeOrder },
           state.busy ? 'Sending to the bar…' : h('span', {}, 'Place Order'), state.busy ? null : h('span', { class: 'spread' }, baht(cartTotal()))),
-        h('button', { class: 'btn ghost', type: 'button', onclick: () => { state.showCart = false; state.flash = null; render(); restoreMenuScroll(); } }, 'Keep browsing'))),
+        h('button', { class: 'btn ghost', type: 'button', onclick: () => { state.showCart = false; state.flash = null; render(); restoreMenuScroll(); } }, 'Go back'))),
     ];
   }
 
